@@ -1,0 +1,545 @@
+<style>
+  .help-content h2 { font-size: 1.1rem; font-weight: 700; color: #f9fafb; margin-bottom: .75rem; padding-bottom: .5rem; border-bottom: 1px solid #1f2937; }
+  .help-content h3 { font-size: .875rem; font-weight: 600; color: #e5e7eb; margin: 1.25rem 0 .5rem; }
+  .help-content p  { font-size: .875rem; color: #9ca3af; line-height: 1.65; margin-bottom: .75rem; }
+  .help-content ul { font-size: .875rem; color: #9ca3af; line-height: 1.65; padding-left: 1.25rem; margin-bottom: .75rem; list-style: disc; }
+  .help-content li { margin-bottom: .25rem; }
+  .help-content code { font-family: ui-monospace, monospace; font-size: .8rem; background: #1f2937; border: 1px solid #374151; border-radius: .25rem; padding: .1em .4em; color: #d1d5db; }
+  .help-kbd { display: inline-flex; align-items: center; padding: .15rem .4rem; border-radius: .25rem; font-size: .7rem; font-family: ui-monospace, monospace; background: #1f2937; border: 1px solid #374151; color: #d1d5db; line-height: 1; }
+  .toc-link { display: block; font-size: .75rem; color: #6b7280; padding: .3rem .5rem; border-radius: .375rem; transition: color .15s, background .15s; border-left: 2px solid transparent; text-decoration: none; }
+  .toc-link:hover { color: #d1d5db; background: #1f2937; }
+  .toc-link.active { color: #818cf8; border-left-color: #6366f1; background: #1e1b4b22; }
+  html:not(.dark) .help-content h2 { color: #0f172a; border-bottom-color: #e2e8f0; }
+  html:not(.dark) .help-content h3 { color: #1e293b; }
+  html:not(.dark) .help-content p, html:not(.dark) .help-content ul, html:not(.dark) .help-content li { color: #475569; }
+  html:not(.dark) .help-content code { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+  html:not(.dark) .help-kbd { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; }
+</style>
+
+<div class="max-w-5xl mx-auto">
+  <div class="lg:grid lg:gap-8" style="grid-template-columns: 188px 1fr">
+
+    <!-- ── Table of contents (desktop sticky) ──────────────────────────── -->
+    <aside class="hidden lg:block">
+      <nav id="toc" class="sticky top-0 pt-6 space-y-0.5 pr-2">
+        <p class="text-[10px] font-semibold text-gray-600 uppercase tracking-wider px-0.5 mb-2">Contents</p>
+        <a class="toc-link" href="#capture">Capture</a>
+        <a class="toc-link" href="#today">Today</a>
+        <a class="toc-link" href="#tasks">Tasks</a>
+        <a class="toc-link" href="#notes">Notes</a>
+        <a class="toc-link" href="#reminders">Reminders</a>
+        <a class="toc-link" href="#routines">Routines</a>
+        <a class="toc-link" href="#calendar">Calendar</a>
+        <a class="toc-link" href="#lists">Lists</a>
+        <a class="toc-link" href="#bookmarks">Bookmarks</a>
+        <a class="toc-link" href="#analytics">Analytics</a>
+        <a class="toc-link" href="#ai">AI Chat</a>
+        <a class="toc-link" href="#settings">Settings</a>
+        <a class="toc-link" href="#data">Import &amp; Export</a>
+        <a class="toc-link" href="#search">Global Search</a>
+        <a class="toc-link" href="#shortcuts">Keyboard Shortcuts</a>
+        <a class="toc-link" href="#mobile">Mobile</a>
+      </nav>
+    </aside>
+
+    <!-- ── Main content ────────────────────────────────────────────────── -->
+    <div class="py-6">
+
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold text-white">Help</h1>
+        <p class="text-sm text-gray-500 mt-1">A guide to every part of Obelo</p>
+      </div>
+
+      <div class="space-y-10 help-content">
+
+        <!-- Capture -->
+        <section id="capture">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Capture</h2>
+            <p>Capture is the fastest way to get anything into Obelo. Press <span class="help-kbd">C</span> from anywhere or tap the <strong>+</strong> button at the bottom right. Type (or speak) what you want to save in plain language — the AI will parse it and suggest the right type and fields.</p>
+            <h3>Supported types</h3>
+            <ul>
+              <li><strong>Task</strong> — something you need to do. Say "finish slides by friday" and the AI sets a due date and creates a task.</li>
+              <li><strong>Reminder</strong> — time-sensitive alert. "Call dentist tuesday 3pm" becomes a reminder with date and time pre-filled.</li>
+              <li><strong>Note</strong> — general information or thoughts. "Note: ideas for the weekend trip, tag travel" creates a tagged note.</li>
+              <li><strong>Journal</strong> — personal reflection dated to today.</li>
+              <li><strong>Quote</strong> — a quote or book recommendation. Title, author, and source are extracted automatically.</li>
+              <li><strong>List</strong> — a named checklist. "Grocery list: milk, eggs, bread" creates a list with three items.</li>
+              <li><strong>Bookmark</strong> — save a URL. "Bookmark github.com/torvalds/linux" saves it to your bookmarks.</li>
+            </ul>
+            <h3>Reviewing the suggestion</h3>
+            <p>After processing, Obelo shows you what the AI inferred. You can switch the type, edit any field, then click <strong>Save</strong> to confirm — or <strong>Discard</strong> to throw it away. A yellow <em>Low confidence</em> badge means the AI wasn't sure; double-check the fields before saving.</p>
+            <h3>Voice input</h3>
+            <p>Tap the microphone icon in the capture form to dictate. Voice input uses the browser's built-in speech recognition (Chrome and Edge work best; Safari has limited support).</p>
+          </div>
+        </section>
+
+        <!-- Today -->
+        <section id="today">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Today</h2>
+            <p>The Today dashboard gives you a single view of everything relevant for the current day. Press <span class="help-kbd">D</span> to get here from anywhere.</p>
+            <h3>Widgets</h3>
+            <ul>
+              <li><strong>Focus tasks</strong> — tasks you've moved to "Today" status. Keep this short and actionable.</li>
+              <li><strong>Calendar</strong> — today's events pulled from connected calendar sources.</li>
+              <li><strong>Due items</strong> — tasks and reminders due today or overdue, sorted by urgency.</li>
+              <li><strong>Routines</strong> — habits scheduled for today, grouped by time of day.</li>
+              <li><strong>Resurfaced note</strong> — one note from your library, rotated daily, to keep old thinking visible.</li>
+              <li><strong>Review</strong> — notes you've flagged for review that are due.</li>
+            </ul>
+            <h3>Customising widgets</h3>
+            <p>Go to <strong>Settings → Dashboard</strong> to choose which widgets appear and drag them into your preferred order.</p>
+            <h3>Slipping tasks</h3>
+            <p>The <strong>Slipping</strong> badge in the Tasks tab counts tasks that haven't been touched in 7 days. Visit the Slipping view to triage them.</p>
+          </div>
+        </section>
+
+        <!-- Tasks -->
+        <section id="tasks">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Tasks</h2>
+            <p>Press <span class="help-kbd">T</span> to open Tasks. Use the tabs at the top to switch between views.</p>
+            <h3>Views</h3>
+            <ul>
+              <li><strong>Inbox</strong> — unscheduled tasks with no specific due date.</li>
+              <li><strong>Today</strong> — tasks you've promoted to your daily focus.</li>
+              <li><strong>Upcoming</strong> — tasks due in the next 7 days, grouped by date.</li>
+              <li><strong>All</strong> — every open task.</li>
+              <li><strong>Completed</strong> — tasks you've finished.</li>
+              <li><strong>Slipping</strong> — tasks untouched for 7+ days.</li>
+            </ul>
+            <h3>Priority</h3>
+            <p>Tasks have four priority levels: None, Low, Medium, and High. Each row shows a coloured dot (blue / amber / red) for quick scanning, plus a shape icon: one chevron (↑) for Low, two (↑↑) for Medium, three (↑↑↑) for High. The icons are always gray so they don't clash with date urgency colors.</p>
+            <h3>Date urgency colours</h3>
+            <ul>
+              <li><strong>Green</strong> — due today (or later today if a time is set and hasn't passed).</li>
+              <li><strong>Red</strong> — overdue.</li>
+              <li>Gray — future date, no urgency yet.</li>
+            </ul>
+            <h3>Status</h3>
+            <p>Change a task's status using the dropdown on the right side of each row: <em>Inbox, Today, In Progress, On Hold, Archived, Done</em>.</p>
+            <h3>Recurring tasks</h3>
+            <p>Enable <strong>Recurring</strong> in the task editor to have the task automatically re-queue after each completion. Preset frequencies include: Daily, Weekdays, Weekends, Weekly, Biweekly, Monthly, Every 3 Months, Every 6 Months, Yearly, and Hourly. Choose <strong>Custom</strong> to set any frequency and interval (e.g. "every 10 days" or "every 2 weeks"), with monthly options for a specific day-of-month or a given weekday (e.g. "second Tuesday").</p>
+            <h3>Due-time alerts</h3>
+            <p>Set a specific time on a task (the Time field in the editor) to get push or email alerts 15 minutes before, exactly at the due time, and 5 minutes after if the task is still open. Configure which channels fire in <strong>Settings → Notifications</strong>.</p>
+            <h3>Subtask checklists</h3>
+            <p>In the task editor, click the <strong>Subtask checklist</strong> button above the Notes field to insert <code>- [ ]</code> checklist items. They render as tappable checkboxes on the task detail page.</p>
+            <h3>Bulk actions</h3>
+            <p>Check one or more task checkboxes to reveal the bulk action bar. Select an action (complete, archive, change priority) and click <strong>Apply</strong>.</p>
+            <h3>Archived tasks</h3>
+            <p>Archiving hides a task from every active view. Open the <strong>Archived</strong> tab to see them again. To un-archive, change a task's status back with its row dropdown, or select one or more and use the <strong>Restore to inbox</strong> bulk action.</p>
+            <h3>Quick add</h3>
+            <p>Type a task title in the quick-add bar at the top of the list and press Enter to create it instantly in the current view's status.</p>
+          </div>
+        </section>
+
+        <!-- Notes -->
+        <section id="notes">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Notes</h2>
+            <p>Press <span class="help-kbd">N</span> to start a new note. Notes support full Markdown rendering — headings, bold, italic, links, code, tables, and checklists all work.</p>
+            <h3>Finding and sorting notes</h3>
+            <p>The list beside the open note has a <strong>Show</strong> menu: all notes, one type, <strong>Flagged</strong> (notes you marked for review) or <strong>Slipping</strong> (notes you haven't touched in a while, oldest first). Press <strong>Select</strong> to tick several notes, then delete, pin, flag or tag them together.</p>
+            <h3>Importing notes</h3>
+            <p>Import one or more Markdown files from <strong>Settings → Data</strong>. Front matter fields <code>title</code> and <code>tags</code> are read automatically; the filename is used as the title if none is set.</p>
+            <h3>Note types</h3>
+            <ul>
+              <li><strong>Note</strong> — general-purpose knowledge or thoughts.</li>
+              <li><strong>Journal</strong> — dated personal entries. The title pre-fills with today's date.</li>
+              <li><strong>Quote</strong> — a quote, passage, or book recommendation with author and source fields.</li>
+            </ul>
+            <h3>Markdown toolbar</h3>
+            <p>The editor toolbar provides shortcuts for Bold (<span class="help-kbd">⌘B</span>), Italic (<span class="help-kbd">⌘I</span>), Underline, Strikethrough, Link (<span class="help-kbd">⌘K</span>), headings, lists, code blocks, tables, and checklists. Select text first to wrap it; use the checklist button on existing <code>- [ ]</code> lines to toggle them done (<code>- [x]</code>). Underline uses <code>&lt;ins&gt;</code> tags — rendered as underlined text in the preview and note view. Hover any toolbar button to see an instant tooltip.</p>
+            <h3>Tags, pinning, and flagging</h3>
+            <ul>
+              <li><strong>Tags</strong> — comma-separated keywords for filtering.</li>
+              <li><strong>Pinned</strong> — pinned notes appear at the top of the list.</li>
+              <li><strong>Private</strong> — private notes show an eye-slash icon in the list and are excluded from AI context.</li>
+              <li><strong>Flag for review</strong> — mark a note to revisit on a specific date; it will appear in Today's Review widget when due.</li>
+            </ul>
+            <h3>Bulk actions</h3>
+            <p>Check one or more notes using the checkboxes on the left of each row to reveal the bulk action bar. Available actions: <strong>Delete</strong>, <strong>Add tags</strong>, and <strong>Remove tags</strong>. The tag input shows a dropdown of your existing tags as you type — click a suggestion or type freely and press comma to add multiple tags at once.</p>
+            <h3>Attachments</h3>
+            <p>Upload images directly to any note using the <strong>Attach image</strong> button in the editor. Attached images appear below the note content; click one to open it full-size in a lightbox.</p>
+            <h3>Autosave</h3>
+            <p>When editing an existing note, Obelo saves your changes automatically after a short pause. A <strong>Saved ✓</strong> indicator appears briefly in the top-right corner of the editor when a save completes. If you click <strong>Cancel</strong> after an autosave has fired, a prompt appears giving you the option to keep the autosaved changes or revert to the version from when you opened the note.</p>
+            <p>Autosave can be configured or disabled in <strong>Settings → Notes</strong>. Available save delays: Immediate (1.5 seconds), 2 minutes, or 5 minutes after the last change.</p>
+            <h3>Handwriting mode</h3>
+            <p>In the note editor, tap <strong>✏ Draw</strong> (next to the Text toggle) to switch to handwriting mode. A lined canvas appears — write freely with Apple Pencil or your finger. The canvas expands automatically as you write toward the bottom, so you never run out of space.</p>
+            <ul>
+              <li><strong>Colors</strong> — four swatches (main ink, blue, red, green) in the toolbar. They adjust to the paper, so the main ink is white on dark paper and near-black on light paper.</li>
+              <li><strong>Size</strong> — S / M / L line width buttons.</li>
+              <li><strong>Eraser</strong> — tap Eraser then stroke over content to erase; tap any color to return to pen mode.</li>
+              <li><strong>Undo</strong> — removes the last stroke one at a time.</li>
+              <li><strong>Clear</strong> — immediately erases all strokes on the canvas.</li>
+            </ul>
+            <p><strong>Paper.</strong> By default the paper follows your theme: dark in dark themes, light in light themes. In <strong>Settings → Notes → Handwriting paper</strong> you can force Dark or White instead. The same drawing reads fine on either paper.</p>
+            <p>Handwritten notes are stored as stroke vectors, not images, so they scale correctly on any screen. They show a pencil icon and "Handwritten note" preview in the notes list. Handwritten notes cannot be locked or searched by content.</p>
+            <h3>Swipe actions (mobile)</h3>
+            <ul>
+              <li><strong>Short swipe right</strong> — pin or unpin the note. The pin icon on the card updates instantly.</li>
+              <li><strong>Full swipe right</strong> — flag the note for review (drag further; the hint transitions from amber to red). The flag icon updates instantly.</li>
+              <li><strong>Swipe left</strong> — delete the note. The row collapses with an animation.</li>
+            </ul>
+            <h3>Slipping notes</h3>
+            <p>The <strong>Slipping</strong> tab surfaces any note that hasn't been touched in more than 30 days — regardless of type, pin status, or whether it's flagged. Notes are sorted oldest-touched first (most stale at top) and each card shows a "<em>N</em> days ago" badge instead of the usual date. Opening and editing a note resets its staleness automatically.</p>
+            <p>On the Today dashboard, slipping notes also appear in the <strong>Needs Review</strong> widget with an amber <em>stale Nd</em> badge (separate from flagged-for-review notes, and limited to 5).</p>
+            <h3>Thoughts feed</h3>
+            <p>Switch to the <strong>Thoughts</strong> tab for a chronological feed of all your notes — good for reviewing recent thinking.</p>
+          </div>
+        </section>
+
+        <!-- Reminders -->
+        <section id="reminders">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Reminders</h2>
+            <p>Reminders are time-based alerts. Unlike tasks, they fire at a specific date and time via push notification or email.</p>
+            <h3>Setting up notifications</h3>
+            <p>Go to <strong>Settings → Notifications</strong> to enable push notifications (browser permission required) and configure email delivery. Use <strong>Send test</strong> to verify your setup.</p>
+            <h3>Due-time alerts</h3>
+            <p>In addition to the primary notification at the exact reminder time, Obelo sends advance and follow-up alerts: 15 minutes before, exactly at the time, and 5 minutes after if still incomplete. Each alert type can be sent via push, email, or both — configured per-type in <strong>Settings → Notifications</strong>.</p>
+            <h3>Priority</h3>
+            <p>Reminders support the same four priority levels as tasks. The row shows a gray shape icon (1/2/3 chevrons) so priority doesn't compete visually with date urgency colours (green = due today, red = overdue).</p>
+            <h3>Snooze</h3>
+            <p>On the reminder list and detail page, hover a row to reveal snooze buttons: <strong>15 min</strong>, <strong>1 hour</strong>, or <strong>Tomorrow</strong>. Snoozing pushes the reminder time forward and re-queues any notifications.</p>
+            <h3>Tag filter</h3>
+            <p>If your reminders have tags, tag pills appear below the view tabs. Click a tag to show only reminders with that tag; the active view tab is preserved. Click <strong>All</strong> to clear the filter.</p>
+            <h3>Bulk actions</h3>
+            <p>Check one or more reminder checkboxes (left of each row) to reveal the bulk action bar. Actions available depend on the view: <strong>Upcoming / Today / Overdue</strong> — Mark complete or Delete; <strong>Completed</strong> — Delete only. Click <strong>Apply</strong> to execute or <strong>Cancel</strong> to dismiss.</p>
+            <h3>Swipe actions (mobile)</h3>
+            <ul>
+              <li><strong>Swipe right</strong> — mark the reminder complete. It slides out with a green animation.</li>
+              <li><strong>Short swipe left</strong> — snooze the reminder by 1 hour. The row collapses and the reminder is rescheduled.</li>
+              <li><strong>Full swipe left</strong> — delete the reminder (drag further; the hint transitions from amber to red).</li>
+            </ul>
+            <p>Swipe actions are only available on incomplete reminders. The Completed view has no swipe actions.</p>
+            <h3>Recurring reminders</h3>
+            <p>When creating a reminder, enable <strong>Recurring</strong> and choose a frequency. Presets: Hourly, Daily, Weekdays, Weekends, Weekly, Biweekly, Monthly, Every 3 Months, Every 6 Months, Yearly. Choose <strong>Custom</strong> to enter any frequency and interval, with monthly options for a specific day-of-month or a weekday ordinal (e.g. "third Friday"). The reminder re-queues itself after each completion.</p>
+          </div>
+        </section>
+
+        <!-- Routines -->
+        <section id="routines">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Routines</h2>
+            <p>Routines are daily habits that appear on your Today dashboard grouped by time of day: Morning, Afternoon, Evening, and Anytime. Obelo only shows a routine on the dashboard when it is actually due.</p>
+            <h3>Frequency options</h3>
+            <p>Each routine can run daily, on weekdays (Mon–Fri), on weekends, weekly on a specific day, or on a custom set of days. Routines with a start date in the future will not appear until that date arrives.</p>
+            <h3>Streaks</h3>
+            <p>Completing a routine increments your streak counter. One missed scheduled day breaks the streak. The detail page shows your current streak, all-time best streak, and total completions. Streaks also appear in the Analytics page alongside each routine's 30-day completion rate.</p>
+            <h3>Completion timestamps</h3>
+            <p>Every routine completion records the exact time it was marked done. This powers the time-of-day chart in Analytics and the on-time rate for routines with a specific scheduled time. Completions logged before this feature was introduced have a date only — time-based metrics build up as you use the app going forward.</p>
+            <h3>Completion heatmap</h3>
+            <p>Each routine's detail page displays a 12-week heatmap. Cells are colour-coded: <strong>green</strong> = completed, <strong>dark gray</strong> = missed, <strong>faint</strong> = not applicable (before the start date, or a day the routine doesn't run — for example, every day except Tuesday for a Tuesday-only routine), <strong>empty</strong> = future. The weekly bar chart below it shows your completion rate for each of the past 12 weeks, skipping non-scheduled days from the denominator.</p>
+            <h3>Time-limited streaks</h3>
+            <p>When creating or editing a routine, choose <strong>Time-limited</strong> (instead of Ongoing) to set a duration in days and an optional start date. Each routine row shows a <strong>Day N/M</strong> badge so you can track progress at a glance. Once you hit the duration, the routine auto-archives. Completed time-limited routines appear in their own <strong>Completed Streaks</strong> section under Archived, showing total days completed, completion percentage, and best streak.</p>
+            <h3>Tag filter</h3>
+            <p>If your routines have tags, tag pills appear below the view tabs. Click a tag to show only routines with that tag; click <strong>All</strong> to clear the filter.</p>
+            <h3>Bulk actions</h3>
+            <p>Check one or more routine checkboxes to reveal the bulk action bar. Available actions: <strong>Archive</strong> (hides the routine from active views) and <strong>Delete</strong> (permanently removes it). Click <strong>Apply</strong> to execute or <strong>Cancel</strong> to dismiss. In the <strong>Archived</strong> view the bulk action becomes <strong>Restore</strong>, which returns the selected routines to active. A single routine can also be restored from its detail page.</p>
+            <h3>Swipe actions (mobile)</h3>
+            <ul>
+              <li><strong>Swipe right</strong> — toggle today's completion for the routine. The row updates in place with a checkmark (or removes it if already completed). Swipe is only available on incomplete routines.</li>
+            </ul>
+            <h3>Notifications</h3>
+            <p>Enable <strong>notifications</strong> on any routine that has a specific time set. A push notification (Pushover and/or ntfy, whichever you've enabled in Settings → Notifications) fires at that time on days the routine is scheduled.</p>
+          </div>
+        </section>
+
+        <!-- Calendar -->
+        <section id="calendar">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Calendar</h2>
+            <p>Obelo syncs with external calendars using CalDAV (Apple Calendar, Fastmail, Nextcloud, etc.) and Google Calendar, and supports Obelo-native shared calendars.</p>
+            <h3>Adding a calendar source</h3>
+            <p>Go to <strong>Calendar → Sources → Add source</strong>. For Apple Calendar / iCloud, use your Apple ID and an <a href="https://appleid.apple.com" class="text-indigo-400 hover:text-indigo-300">app-specific password</a>. For Google, authenticate via OAuth. For generic CalDAV, provide the server URL and credentials.</p>
+            <h3>Selecting which calendars to sync</h3>
+            <p>After connecting a source, expand the <strong>Calendars to sync</strong> section in Calendar Sources to check or uncheck individual sub-calendars. Only checked calendars are fetched during sync.</p>
+            <h3>Creating events</h3>
+            <p>Click <strong>New Event</strong> (or a day cell) to open the event form. The Calendar selector lists each individual sub-calendar — with a color swatch — rather than just the source name. Pick the exact calendar to write to. For Google sources, read-only calendars are automatically hidden. All-day events show at the top of the day column.</p>
+            <h3>Editing events</h3>
+            <p>Click any event to open its detail page. Events created directly in Obelo show an <strong>Edit event</strong> button — click it to update the title, date, time, location, or notes. Events synced from external CalDAV or Google Calendar sources are read-only in Obelo; edit them in their source app.</p>
+            <h3>Shared Calendars</h3>
+            <p>Create a Obelo-native shared calendar from <strong>Calendar Sources → Shared Calendars → New calendar</strong>. Once created, add other Obelo users by username. All members see each other's events on their calendar in the shared calendar's color. Members with edit access can also create events in that calendar. In the iPhone, iPad and Mac apps, all of this is under <strong>Settings → Calendars</strong>.</p>
+            <p>Deleting a shared calendar preserves all its events — they become unlinked (no calendar label) rather than deleted.</p>
+            <h3>Sync frequency</h3>
+            <p>Calendars sync automatically in the background. Use <strong>Sync now</strong> on the Sources page to trigger an immediate sync for a specific source.</p>
+          </div>
+        </section>
+
+        <!-- Lists -->
+        <section id="lists">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Lists</h2>
+            <p>Lists are simple checklists — shopping lists, packing lists, reading lists, anything you want to tick off.</p>
+            <h3>Adding items</h3>
+            <p>Type in the text field at the top of the list and press Enter or click <strong>Add</strong>. Completed items move to the bottom with a strikethrough.</p>
+            <h3>Editing and deleting items</h3>
+            <p>Hover (or tap) an item to reveal the pencil icon for inline editing and the × to remove it.</p>
+            <h3>Sharing</h3>
+            <p>Owners can share any list with another Obelo user by username. Shared users can add, edit, and check off items. Only the owner can delete the list or revoke access.</p>
+          </div>
+        </section>
+
+        <!-- Bookmarks -->
+        <section id="bookmarks">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Bookmarks</h2>
+            <p>Press <span class="help-kbd">B</span> to open Bookmarks. Save any URL with an optional title, description, and tags.</p>
+            <h3>Adding a bookmark</h3>
+            <p>Paste a URL in the top form (the <code>https://</code> prefix is added automatically). Fill in a title and description if you want, then click <strong>Add</strong>.</p>
+            <h3>Opening links</h3>
+            <p>Click the bookmark title to open in a new tab. The arrow icon opens it in a new window.</p>
+            <h3>Filtering and search</h3>
+            <p>Use the search bar to filter by title, URL, description, or tags. Click a tag pill to filter to that tag only; click it again to clear the filter.</p>
+            <h3>Sharing</h3>
+            <p>Each bookmark has a share button (→) that opens a sheet with three options:</p>
+            <ul>
+              <li><strong>Send to Obelo user</strong> — type a username and send a copy of the bookmark to that user's account.</li>
+              <li><strong>Share via SMS</strong> — opens your device's default messaging app with the URL pre-filled.</li>
+              <li><strong>Copy link</strong> — copies the URL to the clipboard.</li>
+            </ul>
+            <h3>Editing</h3>
+            <p>Hover a bookmark row to reveal the pencil icon, or swipe right on mobile (opens the edit sheet). You can update the URL, title, description, and tags.</p>
+            <h3>Bulk delete</h3>
+            <p>Check one or more bookmark checkboxes to reveal the bulk action bar and delete multiple bookmarks at once. Confirm the deletion prompt to proceed.</p>
+            <h3>Swipe actions (mobile)</h3>
+            <ul>
+              <li><strong>Swipe right</strong> — opens the edit sheet for that bookmark.</li>
+              <li><strong>Swipe left</strong> — deletes the bookmark immediately (no confirmation).</li>
+            </ul>
+            <h3>Exporting</h3>
+            <p>Export your bookmarks as CSV or as a Netscape HTML file (importable into any browser) from <strong>Settings → Data</strong>.</p>
+          </div>
+        </section>
+
+        <!-- Analytics -->
+        <section id="analytics">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Analytics</h2>
+            <p>The Analytics page (<span class="help-kbd">A</span>) reveals behavioral patterns across tasks, reminders, and routines. Use the time range toggle (30d / 90d / All time) in the top-right to change the window for most charts.</p>
+            <h3>Summary cards</h3>
+            <ul>
+              <li><strong>Completed</strong> — total tasks and reminders marked done in the selected time range.</li>
+              <li><strong>True on-time rate</strong> — percentage of items with a due date completed before the due time or within the 30-minute grace window. This answers: "Did I do it when I said I would?"</li>
+              <li><strong>Same-day rate</strong> — percentage completed on the correct calendar day regardless of time. This answers: "Did I at least get to it today?"</li>
+              <li><strong>Avg days late</strong> — average calendar days past due for items completed on a later day.</li>
+              <li><strong>Best day</strong> — the day of the week you complete the most items.</li>
+              <li><strong>Current streak / Best streak</strong> — consecutive days with at least one completion (tasks, reminders, or routines). Best streak is all-time. If today is still in progress, yesterday's streak is shown so an incomplete day doesn't break your count.</li>
+            </ul>
+            <h3>Timing buckets and the 30-minute grace window</h3>
+            <p>When an item has both a due date and a due time, completion is classified at the timestamp level:</p>
+            <ul>
+              <li><strong>Early</strong> — completed before the due time (any prior day or earlier the same day).</li>
+              <li><strong>On time</strong> — completed within 30 minutes after the due time.</li>
+              <li><strong>Same-day late</strong> — completed more than 30 minutes past the due time but still on the same calendar day.</li>
+              <li><strong>Late 1–3 days / 4–7 days / 8+ days</strong> — completed on a later calendar day.</li>
+            </ul>
+            <p>If an item has a due date but <em>no</em> due time, completing it anywhere on the due date counts as On time.</p>
+            <h3>Completion timing chart</h3>
+            <p>A stacked bar chart grouped by week, showing items with due dates broken down by the buckets above. The yellow segment is Same-day late — items you got to on the right day but past the due time.</p>
+            <h3>On-time rate trend</h3>
+            <p>A line chart showing your weekly true on-time percentage (items with due dates only). Use this to answer "is my punctuality getting better or worse over time?" Only shown when there is at least one week with data. Weeks with no due-date items are shown as gaps.</p>
+            <h3>When you complete things</h3>
+            <p>A bar chart showing what hour of the day completions actually happen, grouped into 2-hour buckets. Covers tasks, reminders, <em>and</em> routines (routine time-of-day data is recorded from the time the feature was enabled — historical completions show date only). Reveals patterns like "I complete almost everything between 4–6 PM no matter what time I scheduled it."</p>
+            <h3>By priority</h3>
+            <p>True on-time rate per priority (High, Medium, Low, None) with a secondary same-day rate shown when they differ. Useful for spotting whether high-stakes items get done on time even if low-priority ones don't.</p>
+            <h3>Activity heatmap</h3>
+            <p>A GitHub-style grid showing all completions — tasks, reminders, and routines — across the last 12 weeks. Always 12 weeks, independent of the range toggle. Darker cells mean more total completions on that day.</p>
+            <h3>Completion velocity</h3>
+            <p>A line chart showing task and reminder completions per week over the last 12 weeks. A trend indicator (↑ / ↓ / →) compares the last 4 weeks against the prior 4 weeks; a change of more than 10% counts as a trend.</p>
+            <h3>Routines completion rate</h3>
+            <p>For each active routine, the percentage of scheduled days in the last 30 days that were actually completed, sorted worst to best. Each row also shows:</p>
+            <ul>
+              <li><strong>Current streak / Best streak</strong> — pulled directly from the routine's streak counter.</li>
+              <li><strong>On-time rate at scheduled time</strong> — for routines with a specific time set, the percentage of logged completions that happened within 30 minutes of that time. This metric builds up from the date the timestamp feature was enabled; older completions have no time data.</li>
+            </ul>
+            <p>The overall rate at the top combines all routines weighted by their expected frequency. Routine titles link to the routine detail page.</p>
+            <h3>Routine weekly consistency trend</h3>
+            <p>A line chart below the routine list showing the aggregate completion rate (across all active routines combined) for each of the last 8 weeks. Use this to see whether your overall habit consistency is trending up or down.</p>
+            <h3>Late 8+ days — age at completion</h3>
+            <p>Appears inside the By Priority section when there are items completed more than 8 days past their due date. Shows average, median, and longest delay.</p>
+          </div>
+        </section>
+
+        <!-- AI Chat -->
+        <section id="ai">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>AI Chat</h2>
+            <p>AI Chat lets you ask questions about your own Obelo data using natural language.</p>
+            <ul>
+              <li>"What tasks are overdue?"</li>
+              <li>"Summarise my notes tagged health"</li>
+              <li>"What did I journal about last week?"</li>
+              <li>"What workouts did I log in May?"</li>
+            </ul>
+            <p>Responses are generated by the AI model your server admin configured, and grounded in your actual notes, tasks, reminders, and calendar — not generic information. The AI has read-only access; it can never create or modify your data.</p>
+            <h3>API key</h3>
+            <p>AI Chat and Capture require the server admin to configure an AI provider in the server environment (<code>AI_PROVIDER</code>, <code>AI_API_KEY</code> and related settings — see <code>.env.example</code>). Contact your instance administrator if AI features aren't working.</p>
+          </div>
+        </section>
+
+        <!-- Settings -->
+        <section id="settings">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Settings</h2>
+            <p>Press <span class="help-kbd">,</span> or click the gear icon to open Settings.</p>
+            <h3>Account</h3>
+            <p>Update your display name, username, email, timezone, and avatar. The <strong>Password</strong> card sets or changes your password (changing it signs out your other devices). If your server uses single sign-on, your sign-in security is also managed in your identity provider. You're signed out automatically after a while without using Obelo (12 hours by default) and a week after signing in (both can be changed by the admin). <strong>Signed-in devices</strong> lists everywhere you're signed in, with when each signed in and was last active; sign out any device you don't recognise, or all of them except the one you're using. You can also set your preferred <strong>time format</strong> here — 12-hour (1:30 PM) or 24-hour (13:30); 12-hour is the default. Account deletion is also here — it's irreversible.</p>
+            <h3>Appearance</h3>
+            <p>Choose from six built-in themes: <em>Dark</em> (default), <em>Midnight</em> (deep navy), <em>Forest</em> (earthy green), <em>Mocha</em> (warm amber), <em>Light</em>, and <em>Breeze</em> (cool blue-gray). Or use the <strong>Custom</strong> option to pick any accent color with either a dark or light base — the accent previews live as you drag the color picker. The preference is saved per-user and persists across devices.</p>
+            <h3>Modules</h3>
+            <p>Enable or disable individual modules and drag them to reorder how they appear in the sidebar and mobile bottom navigation.</p>
+            <h3>Notifications</h3>
+            <p>Enable push notifications (Pushover and/or ntfy — ntfy is free) and/or email delivery for reminders and task due-time alerts. Configure per-alert-type channels: daily digest, slipping-tasks summary, reminder fires, and task due alerts (15 min before, at time, 5 min after). Use <strong>Send test</strong> to verify the setup.</p>
+            <h3>Notes</h3>
+            <p>Configure note autosave — enable or disable it and set the delay before a save fires (Immediate, 2 minutes, or 5 minutes after the last change).</p>
+            <h3>Dashboard</h3>
+            <p>Choose which widgets appear on Today and drag to reorder them.</p>
+          </div>
+        </section>
+
+        <!-- Import & Export -->
+        <section id="data">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Import &amp; Export</h2>
+            <p>All import and export tools live in <strong>Settings → Data</strong>.</p>
+            <h3>Export</h3>
+            <ul>
+              <li><strong>Full JSON</strong> — backup of your notes, tasks (with subtasks), reminders, routines (with their completion history), lists, and bookmarks. Image attachments and calendar events aren't included.</li>
+              <li><strong>Tasks CSV</strong> — spreadsheet-compatible export of all tasks.</li>
+              <li><strong>Notes JSON</strong> — notes and journal entries only.</li>
+              <li><strong>Bookmarks CSV</strong> — bookmarks in spreadsheet format.</li>
+              <li><strong>Bookmarks HTML</strong> — Netscape bookmark format, importable into Chrome, Firefox, Safari, and most other browsers.</li>
+            </ul>
+            <h3>Import</h3>
+            <ul>
+              <li><strong>Markdown files → Notes</strong> — upload one or more <code>.md</code> files. YAML frontmatter (<code>title:</code>, <code>tags:</code>) is parsed automatically; filenames become titles as a fallback.</li>
+              <li><strong>CSV → Tasks</strong> — upload a CSV with at least a <code>title</code> column. Optional columns: <code>status</code>, <code>priority</code>, <code>due_date</code>, <code>tags</code>, <code>notes</code>.</li>
+              <li><strong>JSON restore</strong> — re-import a Obelo full JSON export. Items already in your account are skipped, so importing the same file twice doesn't create duplicates. Locked notes are restored locked, and open with your PIN when restored into the same account on the same server.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Global Search -->
+        <section id="search">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Global Search</h2>
+            <p>Press <span class="help-kbd">/</span> from anywhere in the app (when not typing in an input) to open the search modal. Type at least 2 characters — results appear after a short debounce so the search fires once you pause, not on every keystroke.</p>
+            <h3>What it searches</h3>
+            <ul>
+              <li><strong>Notes</strong> — title, content body, author, source, and tags (Note, Journal, and Quote types)</li>
+              <li><strong>Tasks</strong> — title and notes body (active tasks only — done and archived are excluded)</li>
+              <li><strong>Reminders</strong> — title and notes body (incomplete only)</li>
+              <li><strong>Routines</strong> — title and description (active only)</li>
+              <li><strong>Calendar</strong> — event title, description, and location</li>
+              <li><strong>Lists</strong> — list title and individual item text (your own lists and lists shared with you)</li>
+              <li><strong>Bookmarks</strong> — title, URL, description, and tags</li>
+            </ul>
+            <h3>Results</h3>
+            <p>Results are grouped by module with a header label for each section. Clicking any result navigates directly to that item. Calendar results are ordered with upcoming events first (nearest next), falling back to most-recent past if no future match exists.</p>
+            <h3>Keyboard shortcuts inside search</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2 mt-2">
+              <% [
+                ['↑ / ↓', 'Move between results'],
+                ['↵ Enter', 'Open selected result'],
+                ['Esc', 'Close search'],
+              ].forEach(([key, label]) => { %>
+                <div class="flex items-center justify-between gap-4 py-1 border-b border-gray-800">
+                  <span class="text-sm text-gray-400"><%= label %></span>
+                  <span class="help-kbd"><%= key %></span>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        </section>
+
+        <!-- Keyboard shortcuts -->
+        <section id="shortcuts">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Keyboard Shortcuts</h2>
+            <p>Press <span class="help-kbd">?</span> from anywhere (when not typing in an input) to open the shortcut reference panel.</p>
+            <h3>Navigation</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2 mt-2">
+              <% [
+                ['D', 'Today dashboard'],
+                ['T', 'Tasks'],
+                ['N', 'New note'],
+                ['C', 'Capture'],
+                ['A', 'Analytics'],
+                ['B', 'Bookmarks'],
+                ['H', 'Help'],
+                [',', 'Settings'],
+                ['/', 'Search'],
+                ['?', 'Shortcut reference'],
+              ].forEach(([key, label]) => { %>
+                <div class="flex items-center justify-between gap-4 py-1 border-b border-gray-800">
+                  <span class="text-sm text-gray-400"><%= label %></span>
+                  <span class="help-kbd"><%= key %></span>
+                </div>
+              <% }); %>
+            </div>
+            <h3>Note editor</h3>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-2 mt-2">
+              <% [
+                ['⌘B', 'Bold'],
+                ['⌘I', 'Italic'],
+                ['⌘K', 'Link'],
+                ['Esc', 'Close modal'],
+              ].forEach(([key, label]) => { %>
+                <div class="flex items-center justify-between gap-4 py-1 border-b border-gray-800">
+                  <span class="text-sm text-gray-400"><%= label %></span>
+                  <span class="help-kbd"><%= key %></span>
+                </div>
+              <% }); %>
+            </div>
+          </div>
+        </section>
+
+        <!-- Mobile -->
+        <section id="mobile">
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <h2>Mobile</h2>
+            <h3>Bottom navigation</h3>
+            <p>On mobile, the bottom bar always shows: <strong>Today, Tasks, Reminders, Lists, Bookmarks</strong>. Tap <strong>More</strong> (☰) to open a full-module sheet containing everything else — Notes, Capture, Routines, Calendar, AI Chat, Settings, and Help.</p>
+            <h3>Swipe actions</h3>
+            <p>Swipe gestures are available on Tasks, Notes, Reminders, Routines, and Bookmarks. Drag horizontally on any row to reveal the action hint, then release past the threshold to confirm.</p>
+            <ul>
+              <li><strong>Tasks — swipe right:</strong> mark complete (green hint). <strong>Swipe left:</strong> delete (red hint). Inactive on completed tasks.</li>
+              <li><strong>Reminders — swipe right:</strong> complete (green hint). <strong>Short swipe left:</strong> snooze 1 hour (amber hint). <strong>Full swipe left:</strong> delete (hint turns red as you drag further). Inactive on completed reminders.</li>
+              <li><strong>Routines — swipe right:</strong> toggle today's completion (green hint). The row updates in place — no row removal. Inactive on already-completed routines.</li>
+              <li><strong>Bookmarks — swipe right:</strong> open the edit sheet. <strong>Swipe left:</strong> delete immediately.</li>
+            </ul>
+            <h3>Voice capture</h3>
+            <p>Open Capture and tap the microphone icon to dictate. This is especially useful on mobile where typing can be slow.</p>
+            <h3>Install as PWA</h3>
+            <p>Obelo is installable as a Progressive Web App. In Safari tap <strong>Share → Add to Home Screen</strong>; in Chrome tap the install icon in the address bar. The installed app runs full-screen with a native feel.</p>
+          </div>
+        </section>
+
+      </div><!-- end help-content -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Highlight active TOC section as user scrolls
+(function () {
+  const links = document.querySelectorAll('#toc .toc-link');
+  const sections = [...links].map(l => document.querySelector(l.getAttribute('href')));
+
+  function onScroll() {
+    const scrollY = document.querySelector('main')?.scrollTop ?? window.scrollY;
+    let active = 0;
+    sections.forEach((s, i) => {
+      if (s && s.offsetTop - 80 <= scrollY) active = i;
+    });
+    links.forEach((l, i) => l.classList.toggle('active', i === active));
+  }
+
+  const scroller = document.querySelector('main') || window;
+  scroller.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>

@@ -1,0 +1,44 @@
+name: Something is broken
+description: Obelo does something you did not expect, or an install or update fails.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please leave out passwords, keys and anything private. For a security problem, use the private link on the previous page instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Obelo version
+      description: Shown at the bottom of the sidebar.
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where did it happen
+      options:
+        - Web
+        - iPhone or iPad app
+        - Mac app
+        - Install or update
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: How you run it
+      description: Docker or not, which sign-in method, reverse proxy, and anything unusual.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: "`docker compose logs app` is usually the useful one. Remove anything private."

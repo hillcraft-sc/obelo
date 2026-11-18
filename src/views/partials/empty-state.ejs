@@ -1,0 +1,16 @@
+<%#
+  Empty state (Phase 2 page pattern): a centred line of muted text, plus one button.
+  locals: message, action? = { label, href } or { label, onclick }
+%>
+<div class="py-12 text-center">
+  <p class="text-sm text-gray-500"><%= message %></p>
+  <% if (typeof action !== 'undefined' && action) { %>
+    <% if (action.href) { %>
+      <a href="<%= action.href %>"
+         class="inline-block mt-3 px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 text-sm font-medium transition-colors"><%= action.label %></a>
+    <% } else { %>
+      <button type="button" onclick="<%= action.onclick %>"
+              class="inline-block mt-3 px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 text-sm font-medium transition-colors"><%= action.label %></button>
+    <% } %>
+  <% } %>
+</div>

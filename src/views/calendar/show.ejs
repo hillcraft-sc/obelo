@@ -1,0 +1,94 @@
+<div class="max-w-xl mx-auto py-6 px-4">
+
+  <a href="/calendar" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+    </svg>
+    Calendar
+  </a>
+
+  <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+    <!-- Color bar -->
+    <div class="h-1.5" style="background-color:<%= event.source?.color || '#6366f1' %>;"></div>
+
+    <div class="p-6">
+      <h1 class="text-xl font-semibold text-white mb-4"><%= event.title %></h1>
+
+      <div class="space-y-3 text-sm">
+        <div class="flex items-start gap-3 text-gray-300">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mt-0.5 shrink-0 text-gray-500">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5"/>
+          </svg>
+          <div>
+            <% if (event.allDay) { %>
+              <%= new Date(event.startAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) %> · All day
+            <% } else { %>
+              <%= new Date(event.startAt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: currentUser.timezone || 'UTC' }) %>
+              <span class="text-gray-500 ml-1">
+                <%= formatTime(new Date(event.startAt)) %> – <%= formatTime(new Date(event.endAt)) %>
+              </span>
+            <% } %>
+          </div>
+        </div>
+
+        <% if (event.location) { %>
+          <div class="flex items-start gap-3 text-gray-300">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 mt-0.5 shrink-0 text-gray-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+            </svg>
+            <span><%= event.location %></span>
+          </div>
+        <% } %>
+
+        <% const calColor = event.source?.color || event.localCalendar?.color || '#6366f1'; %>
+        <% if (event.source || event.localCalendar || event.calendarName) { %>
+          <div class="flex items-center gap-3 text-gray-500 text-xs flex-wrap">
+            <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color:<%= calColor %>;"></span>
+            <% if (event.calendarName) { %>
+              <span class="text-gray-300"><%= event.calendarName %></span>
+              <% if (event.source) { %><span class="text-gray-600">· <%= event.source.name %></span><% } %>
+              <% if (event.localCalendar) { %><span class="text-gray-600">· <%= event.localCalendar.name %></span><% } %>
+            <% } else if (event.localCalendar) { %>
+              <%= event.localCalendar.name %>
+            <% } else if (event.source) { %>
+              <%= event.source.name %>
+            <% } %>
+            <% if (event.createdInObelo) { %>
+              <span class="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800">created in Obelo</span>
+            <% } %>
+          </div>
+        <% } %>
+
+        <% if (event.description) { %>
+          <div class="pt-2 border-t border-gray-800 text-gray-400 text-sm leading-relaxed whitespace-pre-wrap">
+            <%= event.description.replace(/^\[vT\]\s*/, '') %>
+          </div>
+        <% } %>
+
+        <% if (event.url && /^https?:\/\//i.test(event.url)) { %>
+          <a href="<%= event.url %>" target="_blank" rel="noopener"
+             class="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 text-sm transition-colors">
+            Open link ↗
+          </a>
+        <% } %>
+      </div>
+
+      <% if (event.createdInObelo) { %>
+        <div class="mt-6 pt-4 border-t border-gray-800 flex items-center gap-2">
+          <a href="/calendar/events/<%= event.id %>/edit"
+             class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-400 hover:text-white border border-gray-700 transition-colors">
+            Edit event
+          </a>
+          <form method="POST" action="/calendar/events/<%= event.id %>/delete"
+                onsubmit="return confirm('Delete this event?')">
+            <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-red-950 text-sm text-gray-500 hover:text-red-400 border border-gray-700 transition-colors">
+              Delete event
+            </button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

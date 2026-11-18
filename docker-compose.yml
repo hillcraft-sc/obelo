@@ -1,0 +1,43 @@
+services:
+  app:
+    # `build: .` builds from this checkout. `image:` names the result, and is also where a prebuilt
+    # copy of each release is published, so `docker compose pull app` can skip the build.
+    build: .
+    image: ghcr.io/hillcraft-sc/obelo:latest
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3001}:3000"
+    env_file:
+      - .env
+    # Lets AI_BASE_URL use host.docker.internal to reach a model running on the Docker host (Linux)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Note images and avatars — must be outside the container so they survive rebuilds.
+      # Defaults to the "uploads" Docker volume; set UPLOADS_DIR in .env to use a host
+      # folder instead (e.g. a NAS mount). It must be writable by UID 1001.
+      - ${UPLOADS_DIR:-uploads}:/app/uploads
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      # Existing installs have no POSTGRES_DB / POSTGRES_USER in .env and keep the old names.
+      # New installs get `obelo` from .env.example. Never change these on a running install.
+      POSTGRES_DB: ${POSTGRES_DB:-vibetrack}
+      POSTGRES_USER: ${POSTGRES_USER:-vibetrack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  uploads:

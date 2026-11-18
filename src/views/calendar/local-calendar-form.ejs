@@ -1,0 +1,55 @@
+<div class="max-w-lg mx-auto py-6 px-4">
+
+  <a href="/calendar/sources" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+    </svg>
+    Calendar Sources
+  </a>
+
+  <h1 class="text-xl font-bold text-white mb-6">
+    <%= localCalendar ? 'Edit Shared Calendar' : 'New Shared Calendar' %>
+  </h1>
+
+  <% if (errors.length) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm">
+      <% errors.forEach(e => { %><div><%= e %></div><% }); %>
+    </div>
+  <% } %>
+
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+    <form method="POST"
+          action="<%= localCalendar ? '/calendar/local-calendars/' + localCalendar.id : '/calendar/local-calendars' %>"
+          class="space-y-4">
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1">Calendar name <span class="text-red-500">*</span></label>
+        <input type="text" name="name" required autofocus
+               value="<%= localCalendar?.name || '' %>"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500 placeholder-gray-600"
+               placeholder="e.g. Family, Work Team">
+      </div>
+
+      <div class="flex items-center gap-3">
+        <label class="text-xs font-medium text-gray-400">Color</label>
+        <input type="color" name="color" value="<%= localCalendar?.color || '#6366f1' %>"
+               class="h-8 w-16 bg-gray-800 border border-gray-700 rounded-lg px-1 py-1 cursor-pointer focus:outline-hidden">
+      </div>
+
+      <p class="text-xs text-gray-600">
+        After creating, go to Calendar Sources to add members by username.
+      </p>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+                class="flex-1 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors">
+          <%= localCalendar ? 'Save changes' : 'Create calendar' %>
+        </button>
+        <a href="/calendar/sources"
+           class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 text-sm transition-colors">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>

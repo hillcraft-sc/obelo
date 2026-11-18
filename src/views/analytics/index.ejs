@@ -1,0 +1,666 @@
+<script src="/js/chart.umd.min.js"></script>
+<style>
+  .heat-cell { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+  .heat-0 { background: var(--bg-el); }
+  .heat-1 { background: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.2); }
+  .heat-2 { background: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.45); }
+  .heat-3 { background: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.7); }
+  .heat-4 { background: rgba(var(--ac-r),var(--ac-g),var(--ac-b),1); }
+  .heat-future { background: var(--bg-el); opacity: .35; }
+  .rate-bar { height: 5px; border-radius: 3px; background: var(--bg-h2); overflow: hidden; }
+  .rate-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+</style>
+
+<%
+/* ── Pre-compute chart narrative ── */
+const wd = JSON.parse(weeklyDataJson);
+const hasChartData = wd.some(w => w.early+w.on_time+w.late_same_day+w.late_1_3+w.late_4_7+w.late_8plus > 0);
+
+const tot = wd.reduce((a, w) => {
+  a.early += w.early; a.on_time += w.on_time; a.late_same_day += w.late_same_day;
+  a.late_1_3 += w.late_1_3; a.late_4_7 += w.late_4_7; a.late_8plus += w.late_8plus;
+  return a;
+}, { early:0, on_time:0, late_same_day:0, late_1_3:0, late_4_7:0, late_8plus:0 });
+
+const totalChart = tot.early + tot.on_time + tot.late_same_day + tot.late_1_3 + tot.late_4_7 + tot.late_8plus;
+const onTimeN    = tot.early + tot.on_time;
+const sdLateN    = tot.late_same_day;
+const daysLateN  = tot.late_1_3 + tot.late_4_7 + tot.late_8plus;
+
+let chartNarrative = null;
+if (totalChart > 0) {
+  const n = totalChart;
+  const nWord = n === 1 ? 'Your one completion was' : n === 2 ? 'Both completions were' : `All ${n} completions were`;
+  if (onTimeN === n) {
+    chartNarrative = `${nWord} on time or early this period.`;
+  } else if (sdLateN === n) {
+    chartNarrative = `${nWord} same-day late — you hit the right day but missed the due time by more than 30 minutes.`;
+  } else if (daysLateN === n) {
+    chartNarrative = `${nWord} finished days after the due date.`;
+  } else if (onTimeN >= sdLateN && onTimeN >= daysLateN) {
+    const pct = Math.round(onTimeN / n * 100);
+    chartNarrative = `${pct}% of completions were on time or early (${onTimeN} of ${n}).` +
+      (daysLateN > 0 ? ` ${daysLateN} ${daysLateN === 1 ? 'item was' : 'items were'} days late.` : '');
+  } else if (sdLateN >= daysLateN) {
+    const pct = Math.round(sdLateN / n * 100);
+    chartNarrative = `${pct}% of completions were same-day late — right day, but past the due time.` +
+      (daysLateN > 0 ? ` ${daysLateN} ${daysLateN === 1 ? 'item was' : 'items were'} days late.` : '');
+  } else {
+    const pct = Math.round(daysLateN / n * 100);
+    chartNarrative = `${pct}% of completions were finished days after their due date (${daysLateN} of ${n}).` +
+      (onTimeN > 0 ? ` ${onTimeN} ${onTimeN === 1 ? 'item was' : 'items were'} on time or early.` : '');
+  }
+}
+
+/* helper: color class by rate threshold (hero intensity) */
+function rateColor(r) {
+  if (r === null) return 'text-gray-600';
+  return r >= 80 ? 'text-green-400' : r >= 50 ? 'text-amber-400' : 'text-red-400';
+}
+/* same-day rate color — slightly muted */
+function sdRateColor(r) {
+  if (r === null) return 'text-gray-600';
+  return r >= 80 ? 'text-green-600' : r >= 50 ? 'text-amber-600' : 'text-red-500';
+}
+%>
+
+<div class="max-w-4xl mx-auto px-4 py-6">
+
+  <!-- What stands out -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+    <h2 class="text-sm font-semibold text-white">What stands out</h2>
+    <p class="text-xs text-gray-500 mt-0.5 mb-3">A few findings from your own data.<%= locals.aiEnabled ? ' Worded by AI.' : '' %></p>
+    <ul class="space-y-2">
+      <% standsOut.forEach(item => { %>
+        <li class="flex items-start gap-2.5 text-sm">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0
+                       <%= item.tone === 'good' ? 'bg-emerald-400' : item.tone === 'warn' ? 'bg-amber-400' : 'bg-gray-600' %>"></span>
+          <% if (item.href) { %>
+            <a href="<%= item.href %>" class="text-gray-300 hover:text-white"><%= item.text %></a>
+          <% } else { %>
+            <span class="text-gray-400"><%= item.text %></span>
+          <% } %>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <%- include('../partials/page-heading', { heading: 'Analytics', description: 'When you finish tasks, reminders and routines, compared with when they were due.' }) %>
+    <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-lg p-1 self-start sm:self-auto">
+      <% [['30','30d'],['90','90d'],['all','All time']].forEach(([val,lbl]) => { %>
+        <a href="/analytics?range=<%= val %>"
+           class="px-3 py-1.5 rounded-md text-xs font-medium transition-colors <%= range===val ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-300' %>">
+          <%= lbl %>
+        </a>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- Sparse data notice -->
+  <% if (summary.total > 0 && summary.total < 5) { %>
+    <div class="flex items-start gap-2.5 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 mb-5">
+      <svg class="w-4 h-4 text-gray-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+      </svg>
+      <p class="text-xs text-gray-500">Analytics improve with more data — you have <strong class="text-gray-400"><%= summary.total %> completion<%= summary.total !== 1 ? 's' : '' %></strong> in this period. Percentages are based on a small sample.</p>
+    </div>
+  <% } %>
+
+  <!-- ── Summary cards ─────────────────────────────────────────── -->
+
+  <!-- Hero + secondary row -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+
+    <!-- Hero: True on-time rate -->
+    <div class="rounded-xl p-5 border border-indigo-500" style="background: var(--bg-sf)">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 mb-2">True on-time rate</p>
+          <% if (summary.trueOnTimeRate !== null) { %>
+            <p class="text-4xl font-bold leading-none <%= rateColor(summary.trueOnTimeRate) %>"><%= summary.trueOnTimeRate %>%</p>
+            <p class="text-xs text-gray-500 mt-2">within 30 min of due time · <%= summary.withDueCount %> item<%= summary.withDueCount !== 1 ? 's' : '' %> with due dates</p>
+          <% } else { %>
+            <p class="text-4xl font-bold leading-none text-gray-600">—</p>
+            <p class="text-xs text-gray-600 mt-2">No items with due dates yet.</p>
+          <% } %>
+        </div>
+        <div class="text-gray-700 mt-0.5">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary: Same-day rate -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="text-xs text-gray-500 mb-2">Same-day rate</p>
+          <% if (summary.sameDayRate !== null) { %>
+            <p class="text-3xl font-bold leading-none <%= sdRateColor(summary.sameDayRate) %>"><%= summary.sameDayRate %>%</p>
+            <p class="text-xs text-gray-600 mt-2">completed on the due day</p>
+          <% } else { %>
+            <p class="text-3xl font-bold leading-none text-gray-600">—</p>
+            <p class="text-xs text-gray-600 mt-2">No items with due dates yet.</p>
+          <% } %>
+        </div>
+        <div class="text-gray-700 mt-0.5">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tertiary: context stats + streak -->
+  <div class="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+      <p class="text-[11px] text-gray-600 mb-1">Completed</p>
+      <p class="text-xl font-semibold text-gray-300"><%= summary.total %></p>
+      <p class="text-[11px] text-gray-600 mt-0.5 truncate"><%= rangeLabel %></p>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+      <p class="text-[11px] text-gray-600 mb-1">Avg days late</p>
+      <% if (summary.avgDaysLate !== null) { %>
+        <p class="text-xl font-semibold text-amber-500"><%= summary.avgDaysLate %></p>
+        <p class="text-[11px] text-gray-600 mt-0.5">days (when late)</p>
+      <% } else { %>
+        <p class="text-xl font-semibold text-gray-600">—</p>
+        <p class="text-[11px] text-gray-600 mt-0.5">none late</p>
+      <% } %>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+      <p class="text-[11px] text-gray-600 mb-1">Best day</p>
+      <% if (summary.topDay) { %>
+        <p class="text-base font-semibold text-gray-300 truncate"><%= summary.topDay %></p>
+        <p class="text-[11px] text-gray-600 mt-0.5"><%= summary.topDayCount %> completions</p>
+      <% } else { %>
+        <p class="text-xl font-semibold text-gray-600">—</p>
+        <p class="text-[11px] text-gray-600 mt-0.5">no data yet</p>
+      <% } %>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+      <p class="text-[11px] text-gray-600 mb-1">Current streak</p>
+      <% if (streak.current > 0) { %>
+        <p class="text-xl font-semibold text-indigo-400"><%= streak.current %></p>
+        <p class="text-[11px] text-gray-600 mt-0.5">day<%= streak.current !== 1 ? 's' : '' %> in a row</p>
+      <% } else { %>
+        <p class="text-xl font-semibold text-gray-600">0</p>
+        <p class="text-[11px] text-gray-600 mt-0.5">no recent completions</p>
+      <% } %>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-xl px-3 py-3">
+      <p class="text-[11px] text-gray-600 mb-1">Best streak</p>
+      <% if (streak.best > 0) { %>
+        <p class="text-xl font-semibold text-indigo-400"><%= streak.best %></p>
+        <p class="text-[11px] text-gray-600 mt-0.5">day<%= streak.best !== 1 ? 's' : '' %> · all time</p>
+      <% } else { %>
+        <p class="text-xl font-semibold text-gray-600">—</p>
+        <p class="text-[11px] text-gray-600 mt-0.5">all time</p>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ── Completion Timing chart ─────────────────────────────────── -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Completion Timing</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">When you finished things compared with when they were due: early, on time, or late.</p>
+        <p class="text-xs text-gray-500 mt-0.5">Items with due dates · <%= rangeLabel %> · 30-min grace window</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 shrink-0">
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-green-500"></div><span class="text-xs text-gray-500">Early</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm" style="background:var(--ac)"></div><span class="text-xs text-gray-500">On time</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-yellow-400"></div><span class="text-xs text-gray-500">Same-day late</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm" style="background:var(--st-peach, #f97316)"></div><span class="text-xs text-gray-500">Late 1–3d</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm" style="background:var(--st-maroon, #9a3412)"></div><span class="text-xs text-gray-500">Late 4–7d</span></div>
+        <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-sm bg-red-500"></div><span class="text-xs text-gray-500">Late 8+d</span></div>
+      </div>
+    </div>
+
+    <!-- Plain-language narrative -->
+    <% if (chartNarrative) { %>
+      <p class="text-xs text-gray-500 italic mb-4 leading-relaxed"><%= chartNarrative %></p>
+    <% } %>
+
+    <% if (hasChartData) { %>
+      <div class="relative" style="height:200px">
+        <canvas id="timingChart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="flex items-center justify-center h-36 text-gray-600 text-sm">No completed items with due dates in this period.</div>
+    <% } %>
+  </div>
+
+  <!-- ── On-time Rate Trend ─────────────────────────────────────── -->
+  <% if (hasOnTimeRateTrend) { %>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+    <div class="mb-3">
+      <h2 class="text-sm font-semibold text-white">On-time Rate Trend</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">Your on-time share, week by week. Higher is better.</p>
+      <p class="text-xs text-gray-500 mt-0.5">Weekly % of tasks &amp; reminders completed on time or early · items with due dates only</p>
+    </div>
+    <div class="relative" style="height:160px">
+      <canvas id="onTimeRateChart"></canvas>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ── Time-of-day pattern ───────────────────────────────────────── -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+    <div class="mb-3">
+      <h2 class="text-sm font-semibold text-white">When You Complete Things</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">The times of day you usually finish things.</p>
+      <p class="text-xs text-gray-500 mt-0.5">Hour-of-day breakdown · tasks, reminders &amp; routines · <%= rangeLabel %></p>
+    </div>
+    <% if (hasTodData) { %>
+      <div class="relative" style="height:160px">
+        <canvas id="todChart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="flex items-center justify-center h-24 text-gray-600 text-sm">Not enough data yet for this period.</div>
+    <% } %>
+  </div>
+
+  <!-- ── Priority + heatmap ──────────────────────────────────────── -->
+  <div class="grid lg:grid-cols-2 gap-4 mb-4">
+
+    <!-- By Priority -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-white mb-1">By Priority</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">The on-time rate for each priority level.</p>
+      <p class="text-xs text-gray-500 mb-4">Items with due dates · <%= rangeLabel %></p>
+      <% const hasPriorityData = priorityData.some(p => p.total > 0); %>
+      <% if (hasPriorityData) { %>
+        <div class="space-y-4">
+          <% const priorityColors = { high: 'var(--st-red, #ef4444)', medium: 'var(--st-peach, #f97316)', low: 'var(--st-green, #22c55e)', none: 'var(--tx-m, #6b7280)' }; %>
+          <% priorityData.forEach(p => { %>
+            <% if (p.total === 0) return; %>
+            <div>
+              <div class="flex items-start justify-between gap-4 mb-1.5">
+                <!-- Label + count -->
+                <div class="flex items-center gap-2 min-w-0 pt-0.5">
+                  <div class="w-2 h-2 rounded-full shrink-0" style="background: <%= priorityColors[p.priority] %>"></div>
+                  <span class="text-sm text-gray-300"><%= p.label %></span>
+                  <span class="text-xs text-gray-600"><%= p.total %> item<%= p.total !== 1 ? 's' : '' %></span>
+                </div>
+                <!-- Two-line rates -->
+                <div class="text-right shrink-0">
+                  <div class="text-sm font-semibold leading-tight <%= rateColor(p.trueRate) %>">
+                    True on-time: <%= p.trueRate %>%
+                  </div>
+                  <% if (p.sdRate !== null && p.sdRate !== p.trueRate) { %>
+                    <div class="text-xs text-gray-500 leading-tight mt-0.5">Same-day: <%= p.sdRate %>%</div>
+                  <% } %>
+                </div>
+              </div>
+              <div class="rate-bar">
+                <div class="rate-fill" style="width:<%= p.trueRate %>%;background:<%= p.trueRate >= 80 ? 'var(--st-green, #22c55e)' : p.trueRate >= 50 ? 'var(--st-yellow, #f59e0b)' : 'var(--st-red, #ef4444)' %>"></div>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="flex items-center justify-center h-24 text-gray-600 text-sm">No items with due dates in this period.</div>
+      <% } %>
+      <% if (lateAgeStats) { %>
+        <div class="mt-5 pt-4 border-t border-gray-800">
+          <p class="text-xs font-medium text-gray-500 mb-2">Late 8+ days — age at completion (<%= lateAgeStats.count %> item<%= lateAgeStats.count !== 1 ? 's' : '' %>)</p>
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <p class="text-sm font-semibold text-red-400"><%= lateAgeStats.avg %>d</p>
+              <p class="text-[10px] text-gray-600 mt-0.5">avg</p>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-red-400"><%= lateAgeStats.median %>d</p>
+              <p class="text-[10px] text-gray-600 mt-0.5">median</p>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-red-400"><%= lateAgeStats.max %>d</p>
+              <p class="text-[10px] text-gray-600 mt-0.5">longest</p>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Activity heatmap -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <h2 class="text-sm font-semibold text-white mb-1">Activity Heatmap</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">How many things you finished each day. Darker days had more.</p>
+      <p class="text-xs text-gray-500 mb-4">All completions (tasks, reminders &amp; routines) · last 12 weeks</p>
+
+      <div class="flex gap-1.5">
+        <div class="flex flex-col gap-1 pt-5 pr-1">
+          <% heatmap.dayLabels.forEach((d, i) => { %>
+            <div class="text-[9px] text-gray-600 leading-none" style="height:12px;line-height:12px"><%= i % 2 === 1 ? d : '' %></div>
+          <% }); %>
+        </div>
+        <div class="flex-1 overflow-x-auto">
+          <div class="flex gap-1 mb-1">
+            <% heatmap.weeks.forEach((week, wi) => { %>
+              <div class="flex-none" style="width:12px">
+                <% if (wi === 0 || wi % 4 === 0) { %>
+                  <span class="text-[9px] text-gray-600 whitespace-nowrap" style="position:relative;left:0"><%= heatmap.weekLabels[wi] %></span>
+                <% } %>
+              </div>
+            <% }); %>
+          </div>
+          <div class="flex gap-1">
+            <% heatmap.weeks.forEach(week => { %>
+              <div class="flex flex-col gap-1 flex-none">
+                <% week.forEach(cell => { %>
+                  <div class="heat-cell <%= cell.isFuture ? 'heat-future' : 'heat-' + cell.intensity %>" title="<%= cell.title %>"></div>
+                <% }); %>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 mt-3">
+        <span class="text-[10px] text-gray-600">Less</span>
+        <div class="heat-cell heat-0"></div>
+        <div class="heat-cell heat-1"></div>
+        <div class="heat-cell heat-2"></div>
+        <div class="heat-cell heat-3"></div>
+        <div class="heat-cell heat-4"></div>
+        <span class="text-[10px] text-gray-600">More</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Completion velocity ───────────────────────────────────────── -->
+  <%
+    const trendIcon  = velocityTrend === 'up' ? '↑' : velocityTrend === 'down' ? '↓' : '→';
+    const trendLabel = velocityTrend === 'up' ? 'trending up' : velocityTrend === 'down' ? 'trending down' : 'steady';
+    const trendColor = velocityTrend === 'up' ? 'text-green-400' : velocityTrend === 'down' ? 'text-red-400' : 'text-gray-400';
+  %>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Completion Velocity</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">How many things you finished each week, over the last 12 weeks.</p>
+        <p class="text-xs text-gray-500 mt-0.5">Completions per week · last 12 weeks · independent of range toggle</p>
+      </div>
+      <span class="text-xs font-medium shrink-0 <%= trendColor %>"><%= trendIcon %> <%= trendLabel %></span>
+    </div>
+    <% if (hasVelocityData) { %>
+      <div class="relative" style="height:160px">
+        <canvas id="velocityChart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="flex items-center justify-center h-24 text-gray-600 text-sm">Not enough data yet for this period.</div>
+    <% } %>
+  </div>
+
+  <!-- ── Routines ────────────────────────────────────────────────── -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Routines Completion Rate</h2>
+        <p class="text-xs text-gray-500 mt-0.5 mb-2">The share of each routine's expected days you did it, over the last 30 days.</p>
+        <p class="text-xs text-gray-500 mt-0.5">Last 30 days · active routines · sorted worst to best</p>
+      </div>
+      <% if (routineStats.overallRate !== null) { %>
+        <div class="text-right">
+          <p class="text-lg font-bold <%= rateColor(routineStats.overallRate) %>"><%= routineStats.overallRate %>%</p>
+          <p class="text-[10px] text-gray-600"><%= routineStats.totalCompleted %>/<%= routineStats.totalExpected %> days</p>
+        </div>
+      <% } %>
+    </div>
+    <% if (routineStats.byRoutine.length === 0) { %>
+      <div class="flex items-center justify-center h-20 text-gray-600 text-sm">No active routines.</div>
+    <% } else { %>
+      <div class="space-y-4">
+        <% const freqLabel = { daily:'Daily', weekdays:'Weekdays', weekends:'Weekends', weekly:'Weekly', custom:'Custom' }; %>
+        <% routineStats.byRoutine.forEach(r => { %>
+          <div>
+            <div class="flex items-start justify-between mb-1.5">
+              <div class="flex flex-col gap-0.5 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-gray-300 truncate"><a href="/routines/<%= r.id %>" class="hover:text-white transition-colors"><%= r.title %></a></span>
+                  <span class="text-[10px] text-gray-600 shrink-0"><%= freqLabel[r.frequency] || r.frequency %></span>
+                </div>
+                <%
+                  const _si = [];
+                  if (r.streakCurrent > 0) {
+                    let _t = `<span class="text-amber-500">🔥 ${r.streakCurrent}d streak`;
+                    if (r.streakBest > r.streakCurrent) _t += ` · best ${r.streakBest}d`;
+                    _t += `</span>`;
+                    _si.push(_t);
+                  } else if (r.streakBest > 0) {
+                    _si.push(`<span class="text-gray-500">best ${r.streakBest}d</span>`);
+                  }
+                  if (r.streakCount > 0) {
+                    _si.push(`<span class="text-gray-600">${r.streakCount} streak${r.streakCount !== 1 ? 's' : ''} · avg ${r.streakAvg}d</span>`);
+                  }
+                  if (r.streakCurrent === 0 && r.lastBroken) {
+                    const _bd = new Date(r.lastBroken.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                    _si.push(`<span class="text-red-400/80">broke ${r.lastBroken.length}d · ${_bd}</span>`);
+                  }
+                  if (r.specificTime !== null && r.specificTimeRate !== null) {
+                    const _oc = r.specificTimeRate >= 80 ? 'text-green-500' : r.specificTimeRate >= 50 ? 'text-amber-500' : 'text-red-400';
+                    let _ot = `<span class="${_oc}">on time at ${r.specificTime}: ${r.specificTimeRate}%`;
+                    if (r.timedSampleSize < 5) _ot += ` <span class="text-gray-600">(${r.timedSampleSize} logged)</span>`;
+                    _ot += `</span>`;
+                    _si.push(_ot);
+                  }
+                %>
+                <div class="text-[10px] mt-0.5"><%- _si.join('<span class="text-gray-700"> · </span>') %></div>
+                <% if (r.topStreaks && r.topStreaks.length > 1) { %>
+                  <div class="text-[9px] text-gray-600 mt-0.5">
+                    <%- r.topStreaks.map(s => {
+                      const _sd = new Date(s.startDate).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
+                      const _ed = new Date(s.endDate).toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
+                      const _cls = s.isActive ? 'text-amber-600' : '';
+                      return `<span class="${_cls}">${s.length}d (${_sd}–${_ed}${s.isActive ? ' ▶' : ''})</span>`;
+                    }).join('<span class="text-gray-700"> · </span>') %>
+                  </div>
+                <% } %>
+              </div>
+              <div class="text-right shrink-0 ml-3">
+                <% if (r.rate !== null) { %>
+                  <span class="text-sm font-semibold <%= rateColor(r.rate) %>"><%= r.rate %>%</span>
+                  <span class="text-xs text-gray-600 ml-1"><%= r.completed %>/<%= r.expected %>d</span>
+                <% } else { %>
+                  <span class="text-sm text-gray-600">—</span>
+                <% } %>
+              </div>
+            </div>
+            <% if (r.rate !== null) { %>
+              <div class="rate-bar">
+                <div class="rate-fill" style="width:<%= r.rate %>%;background:<%= r.rate >= 80 ? 'var(--st-green, #22c55e)' : r.rate >= 50 ? 'var(--st-yellow, #f59e0b)' : 'var(--st-red, #ef4444)' %>"></div>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+
+      <!-- Routine 8-week consistency trend -->
+      <% if (hasRoutineVelData) { %>
+        <div class="mt-5 pt-4 border-t border-gray-800">
+          <h3 class="text-xs font-medium text-gray-500 mb-3">Weekly consistency · last 8 weeks (all active routines combined)</h3>
+          <div class="relative" style="height:120px">
+            <canvas id="routineVelChart"></canvas>
+          </div>
+        </div>
+      <% } %>
+    <% } %>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const cs = getComputedStyle(document.documentElement);
+  const acR = cs.getPropertyValue('--ac-r').trim();
+  const acG = cs.getPropertyValue('--ac-g').trim();
+  const acB = cs.getPropertyValue('--ac-b').trim();
+  const accentColor = `rgb(${acR},${acG},${acB})`;
+  const accentFill  = `rgba(${acR},${acG},${acB},0.15)`;
+  const gridColor   = cs.getPropertyValue('--bd-1').trim() || '#1f2937';
+  const tickColor   = cs.getPropertyValue('--tx-m').trim()  || '#6b7280';
+  // Status colours follow the theme (Catppuccin's palette), with Tailwind's as the fallback
+  const st = (name, fallback) => cs.getPropertyValue('--st-' + name).trim() || fallback;
+
+  const sharedScaleX = { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } };
+  const sharedScaleY = { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, stepSize: 1 }, beginAtZero: true };
+
+  // Completion timing (stacked bar)
+  const weeklyData = <%- weeklyDataJson %>;
+  if (weeklyData && document.getElementById('timingChart')) {
+    new Chart(document.getElementById('timingChart'), {
+      type: 'bar',
+      data: {
+        labels: weeklyData.map(w => w.label),
+        datasets: [
+          { label: 'Early',         data: weeklyData.map(w => w.early),         backgroundColor: st('green', '#22c55e'), borderRadius: 2 },
+          { label: 'On time',       data: weeklyData.map(w => w.on_time),        backgroundColor: accentColor, borderRadius: 2 },
+          { label: 'Same-day late', data: weeklyData.map(w => w.late_same_day), backgroundColor: st('yellow', '#facc15'), borderRadius: 2 },
+          { label: 'Late 1–3d',     data: weeklyData.map(w => w.late_1_3),      backgroundColor: st('peach', '#f97316'), borderRadius: 2 },
+          { label: 'Late 4–7d',     data: weeklyData.map(w => w.late_4_7),      backgroundColor: st('maroon', '#9a3412'), borderRadius: 2 },
+          { label: 'Late 8+d',      data: weeklyData.map(w => w.late_8plus),    backgroundColor: st('red', '#ef4444'), borderRadius: 2 },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => 'Week of ' + items[0].label } } },
+        scales: {
+          x: { stacked: true, ...sharedScaleX },
+          y: { stacked: true, ...sharedScaleY },
+        },
+      },
+    });
+  }
+
+  // Time-of-day pattern (bar)
+  const todData = <%- todDataJson %>;
+  if (todData && document.getElementById('todChart')) {
+    new Chart(document.getElementById('todChart'), {
+      type: 'bar',
+      data: {
+        labels: todData.map(b => b.label),
+        datasets: [{ label: 'Completions', data: todData.map(b => b.count), backgroundColor: accentColor, borderRadius: 2 }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => items[0].label + '–' + (items[0].dataIndex < 11 ? todData[items[0].dataIndex + 1].label : '12am') } } },
+        scales: { x: sharedScaleX, y: sharedScaleY },
+      },
+    });
+  }
+
+  // On-time rate trend (line — weekly %)
+  const onTimeRateTrend = <%- onTimeRateTrendJson %>;
+  if (onTimeRateTrend && document.getElementById('onTimeRateChart')) {
+    new Chart(document.getElementById('onTimeRateChart'), {
+      type: 'line',
+      data: {
+        labels: onTimeRateTrend.map(w => w.label),
+        datasets: [{
+          label: 'On-time rate',
+          data: onTimeRateTrend.map(w => w.rate),
+          borderColor: st('green', '#22c55e'),
+          backgroundColor: 'rgba(34,197,94,0.1)',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          spanGaps: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => 'Week of ' + items[0].label,
+              label: item => item.raw !== null ? item.raw + '% on time (' + onTimeRateTrend[item.dataIndex].total + ' items)' : 'No data',
+            },
+          },
+        },
+        scales: {
+          x: sharedScaleX,
+          y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, callback: v => v + '%', stepSize: 25 }, min: 0, max: 100 },
+        },
+      },
+    });
+  }
+
+  // Completion velocity (line)
+  const velocityData = <%- velocityDataJson %>;
+  if (velocityData && document.getElementById('velocityChart')) {
+    new Chart(document.getElementById('velocityChart'), {
+      type: 'line',
+      data: {
+        labels: velocityData.map(w => w.label),
+        datasets: [{
+          label: 'Completions',
+          data: velocityData.map(w => w.count),
+          borderColor: accentColor,
+          backgroundColor: accentFill,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => 'Week of ' + items[0].label } } },
+        scales: { x: sharedScaleX, y: sharedScaleY },
+      },
+    });
+  }
+  // Routine 8-week consistency trend (line — weekly completion rate %)
+  const routineVelData = <%- routineVelDataJson %>;
+  if (routineVelData && routineVelData.length && document.getElementById('routineVelChart')) {
+    new Chart(document.getElementById('routineVelChart'), {
+      type: 'line',
+      data: {
+        labels: routineVelData.map(w => w.label),
+        datasets: [{
+          label: 'Completion rate',
+          data: routineVelData.map(w => w.rate),
+          borderColor: accentColor,
+          backgroundColor: accentFill,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          spanGaps: true,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => 'Week of ' + items[0].label,
+              label: item => item.raw !== null
+                ? item.raw + '% (' + routineVelData[item.dataIndex].completed + '/' + routineVelData[item.dataIndex].expected + ' scheduled days)'
+                : 'No data',
+            },
+          },
+        },
+        scales: {
+          x: sharedScaleX,
+          y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 }, callback: v => v + '%', stepSize: 25 }, min: 0, max: 100 },
+        },
+      },
+    });
+  }
+})();
+</script>

@@ -1,0 +1,99 @@
+<aside class="hidden lg:flex lg:flex-col lg:w-64 bg-gray-900 border-r border-gray-800 shrink-0">
+
+  <div class="flex items-center px-5 py-4 border-b border-gray-800">
+    <span class="text-2xl font-bold text-white tracking-tight">Obelo</span>
+  </div>
+
+  <!-- Search trigger -->
+  <div class="px-3 pt-3 pb-1">
+    <button onclick="openSearch()"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700
+                   text-gray-500 hover:text-gray-300 text-sm transition-colors text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+           stroke="currentColor" class="w-4 h-4 shrink-0">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+      </svg>
+      <span class="flex-1">Search</span>
+      <kbd class="text-[10px] bg-gray-700 border border-gray-600 rounded px-1 font-mono">/</kbd>
+    </button>
+  </div>
+
+  <nav class="flex-1 min-h-0 overflow-y-auto py-2 px-3">
+    <% sidebarGroups.forEach((group, gi) => { %>
+      <div class="<%= gi > 0 ? 'mt-4' : '' %> space-y-0.5">
+        <% if (group.title) { %>
+          <p class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-600"><%= group.title %></p>
+        <% } %>
+        <% group.modules.forEach(mod => { %>
+          <% const isActive = currentPath === mod.route || (mod.route !== '/' && currentPath.startsWith(mod.route)); %>
+          <a href="<%= mod.route %>"
+             class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150
+                    <%= isActive
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800' %>">
+            <%- mod.icon %>
+            <span class="flex-1"><%= mod.label %></span>
+            <% if (mod.beta) { %>
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">beta</span>
+            <% } %>
+          </a>
+        <% }); %>
+      </div>
+    <% }); %>
+  </nav>
+
+  <% if (currentUser && currentUser.role === 'admin') { %>
+    <div class="px-3 pb-2">
+      <% const isAdminPath = currentPath.startsWith('/admin'); %>
+      <a href="/admin"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-150
+                <%= isAdminPath ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800' %>">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+        </svg>
+        <span class="flex-1">Admin</span>
+      </a>
+    </div>
+  <% } %>
+
+  <div class="px-4 py-4 border-t border-gray-800">
+    <div class="flex items-center gap-3">
+      <a href="/settings" title="Settings" class="flex items-center gap-3 flex-1 min-w-0 rounded-lg -m-1 p-1 hover:bg-gray-800 transition-colors <%= currentPath.startsWith('/settings') ? 'bg-gray-800' : '' %>">
+      <% if (_avatarUrl) { %>
+        <img src="<%= _avatarUrl %>" alt="<%= currentUser.displayName %>"
+             class="w-8 h-8 rounded-full shrink-0 object-cover bg-gray-700" />
+      <% } else { %>
+        <div class="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center shrink-0 text-sm font-semibold text-white">
+          <%= currentUser.displayName.charAt(0).toUpperCase() %>
+        </div>
+      <% } %>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-gray-100 truncate"><%= currentUser.displayName %></p>
+        <p class="text-xs text-gray-500 truncate">@<%= currentUser.username %></p>
+      </div>
+      </a>
+      <form action="/auth/logout" method="POST" class="shrink-0">
+        <button type="submit" title="Sign out" class="text-gray-500 hover:text-gray-300 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="pb-3 flex items-center justify-center gap-4">
+    <a href="/help"
+       class="text-[10px] text-gray-700 hover:text-gray-500 transition-colors flex items-center gap-1">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+      </svg>
+      Help
+    </a>
+    <span class="text-[10px] text-gray-700 font-mono">
+      v<%= typeof _version !== 'undefined' ? _version : '' %>
+    </span>
+  </div>
+
+</aside>

@@ -1,0 +1,225 @@
+<% const views = [
+  { key: 'upcoming',  label: 'Upcoming' },
+  { key: 'today',     label: 'Today' },
+  { key: 'overdue',   label: 'Overdue' },
+  { key: 'completed', label: 'Completed' },
+]; %>
+
+<div class="max-w-3xl mx-auto py-6 px-4">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between gap-3 mb-6">
+    <%- include('../partials/page-heading', { heading: 'Reminders', description: 'One-off nudges at a set date and time.' }) %>
+    <a href="/reminders/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm text-white font-medium transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      New reminder
+    </a>
+  </div>
+
+  <!-- View tabs -->
+  <%- include('../partials/tabs', { tabs: views.map(v => ({
+    href: '/reminders?view=' + v.key + (activeTag ? '&tag=' + encodeURIComponent(activeTag) : ''),
+    label: v.label, active: view === v.key,
+    badge: v.key === 'overdue' ? counts.overdue || null : v.key === 'today' ? counts.today || null : null,
+    badgeClass: v.key === 'overdue' ? 'bg-red-600' : 'bg-amber-600',
+  })) }) %>
+
+  <!-- Tag filter -->
+  <% if (allTags.length > 0) { %>
+    <div class="flex flex-wrap gap-1.5 mb-4">
+      <a href="/reminders?view=<%= view %>"
+         class="px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                <%= !activeTag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+        All
+      </a>
+      <% allTags.forEach(tag => { %>
+        <a href="/reminders?view=<%= view %>&tag=<%= encodeURIComponent(tag) %>"
+           class="px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                  <%= activeTag === tag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+          #<%= tag %>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- Bulk form (hidden, checkboxes associate via form= attribute) -->
+  <form id="bulk-form-reminders" action="/reminders/bulk" method="POST" class="inline">
+    <input type="hidden" name="view" value="<%= view %>">
+  </form>
+
+  <!-- Reminder list -->
+  <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden" id="reminder-list">
+
+    <!-- Bulk action bar -->
+    <div id="bulk-bar-reminders" class="hidden flex items-center gap-3 px-4 py-2.5 bg-indigo-950/50 border-b border-indigo-900">
+      <span class="text-xs text-indigo-300 font-medium flex-1"><span id="bulk-count-reminders">0</span> selected</span>
+      <% if (view !== 'completed') { %>
+        <select name="action" form="bulk-form-reminders"
+                class="text-xs bg-gray-800 border border-gray-700 text-gray-200 rounded-lg px-2 py-1 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+          <option value="complete">Mark complete</option>
+          <option value="delete">Delete</option>
+        </select>
+      <% } else { %>
+        <select name="action" form="bulk-form-reminders"
+                class="text-xs bg-gray-800 border border-gray-700 text-gray-200 rounded-lg px-2 py-1 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+          <option value="delete">Delete</option>
+        </select>
+      <% } %>
+      <button type="submit" form="bulk-form-reminders"
+              class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+        Apply
+      </button>
+      <button type="button" onclick="clearReminderSelection()"
+              class="text-gray-500 hover:text-gray-300 text-xs transition-colors">Cancel</button>
+    </div>
+
+    <% if (reminders.length === 0) { %>
+      <%
+        const emptyMsg = activeTag ? 'No reminders match this filter.'
+          : ({ upcoming: 'No upcoming reminders yet.', today: 'Nothing due today.',
+               overdue: 'Nothing overdue.', completed: 'No completed reminders yet.' })[view];
+        const emptyAction = activeTag ? { label: 'Clear filter', href: '/reminders?view=' + view }
+          : (view === 'completed' ? null : { label: 'New reminder', href: '/reminders/new' });
+      %>
+      <%- include('../partials/empty-state', { message: emptyMsg, action: emptyAction }) %>
+    <% } else { %>
+      <% for (const reminder of reminders) { %>
+        <%- include('_row', { reminder, PRIORITY_DOT, PRIORITY_RING, rowDueCls, formatDue }) %>
+      <% } %>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  // Bulk selection
+  const _rCheckboxes = () => document.querySelectorAll('#reminder-list input[type="checkbox"]');
+  const _rBulkBar    = document.getElementById('bulk-bar-reminders');
+  const _rBulkCount  = document.getElementById('bulk-count-reminders');
+
+  function updateReminderBulkBar() {
+    const checked = [..._rCheckboxes()].filter(c => c.checked);
+    if (checked.length > 0) {
+      _rBulkBar.classList.remove('hidden');
+      _rBulkCount.textContent = checked.length;
+    } else {
+      _rBulkBar.classList.add('hidden');
+    }
+  }
+
+  function clearReminderSelection() {
+    _rCheckboxes().forEach(c => c.checked = false);
+    _rBulkBar.classList.add('hidden');
+  }
+
+  document.getElementById('reminder-list').addEventListener('change', e => {
+    if (e.target.type === 'checkbox' && e.target.form?.id === 'bulk-form-reminders') updateReminderBulkBar();
+  });
+
+  // Mobile swipe: right=complete, left-short=snooze 1h, left-full=delete
+  (function() {
+    var list = document.getElementById('reminder-list');
+    if (!list || !('ontouchstart' in window)) return;
+    var RIGHT = 72, SHORT = 72, FULL = 144;
+    var startX, startY, activeRow, activeContent, locked;
+
+    list.addEventListener('touchstart', function(e) {
+      var row = e.target.closest('.reminder-row');
+      if (!row || !row.querySelector('.swipe-hint-r')) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeRow = row;
+      activeContent = row.querySelector('.swipe-content');
+      locked = false;
+    }, { passive: true });
+
+    list.addEventListener('touchmove', function(e) {
+      if (!activeRow || locked) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > Math.abs(dx) + 8) { locked = true; activeRow = null; return; }
+      if (Math.abs(dx) < 6) return;
+      e.preventDefault();
+      activeContent.style.transform = 'translateX(' + dx + 'px)';
+      activeContent.style.transition = 'none';
+      var hintR = activeRow.querySelector('.swipe-hint-r');
+      var hintL = activeRow.querySelector('.swipe-hint-l');
+      if (dx > 0) {
+        hintL.style.opacity = 0;
+        hintR.style.opacity = Math.min(1, dx / RIGHT);
+      } else {
+        hintR.style.opacity = 0;
+        var adx = -dx;
+        hintL.style.opacity = Math.min(1, adx / SHORT);
+        if (adx >= FULL) {
+          hintL.style.background = '#b91c1c';
+          hintL.querySelector('.swipe-snooze-icon').style.display = 'none';
+          hintL.querySelector('.swipe-trash-icon').style.display = '';
+          hintL.querySelector('.swipe-l-label').textContent = 'Delete';
+        } else {
+          hintL.style.background = '#b45309';
+          hintL.querySelector('.swipe-snooze-icon').style.display = '';
+          hintL.querySelector('.swipe-trash-icon').style.display = 'none';
+          hintL.querySelector('.swipe-l-label').textContent = 'Snooze 1h';
+        }
+      }
+    }, { passive: false });
+
+    list.addEventListener('touchend', function(e) {
+      if (!activeRow || locked) { activeRow = null; return; }
+      var dx = e.changedTouches[0].clientX - startX;
+      var row = activeRow;
+      var id = row.id.replace('reminder-', '');
+      activeRow = null;
+      if (dx >= RIGHT) swipeComplete(row, id);
+      else if (dx <= -FULL) swipeDeleteReminder(row, id);
+      else if (dx <= -SHORT) swipeSnooze(row, id);
+      else snapBack(row);
+    }, { passive: true });
+
+    function snapBack(row) {
+      var c = row.querySelector('.swipe-content');
+      c.style.transform = 'translateX(0)';
+      c.style.transition = 'transform .25s ease';
+      row.querySelector('.swipe-hint-r').style.opacity = 0;
+      row.querySelector('.swipe-hint-l').style.opacity = 0;
+    }
+
+    function animateOut(row, dir) {
+      var c = row.querySelector('.swipe-content');
+      c.style.transform = 'translateX(' + (dir === 'r' ? '110%' : '-110%') + ')';
+      c.style.transition = 'transform .22s ease';
+      setTimeout(function() {
+        var h = row.offsetHeight;
+        row.style.height = h + 'px';
+        row.style.overflow = 'hidden';
+        row.style.transition = 'height .18s ease, opacity .18s ease';
+        requestAnimationFrame(function() { requestAnimationFrame(function() {
+          row.style.height = '0'; row.style.opacity = '0';
+        }); });
+        setTimeout(function() { row.remove(); }, 200);
+      }, 230);
+    }
+
+    function swipeComplete(row, id) {
+      animateOut(row, 'r');
+      fetch('/reminders/' + id + '/complete', { method: 'POST' });
+    }
+
+    function swipeSnooze(row, id) {
+      animateOut(row, 'l');
+      fetch('/reminders/' + id + '/snooze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'duration=1hour'
+      });
+    }
+
+    function swipeDeleteReminder(row, id) {
+      animateOut(row, 'l');
+      fetch('/reminders/' + id + '/delete', { method: 'POST' });
+    }
+  })();
+</script>

@@ -1,0 +1,353 @@
+<div class="max-w-lg mx-auto px-4 py-6 space-y-4">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <a href="/lists" class="text-gray-600 hover:text-gray-400 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+             stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+      </a>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 min-w-0">
+          <h1 id="list-title" class="text-xl font-bold text-white truncate"><%= list.title %></h1>
+          <% if (isOwner) { %>
+            <button type="button" id="rename-btn" onclick="startRename()" title="Rename list" aria-label="Rename list"
+                    class="text-gray-600 hover:text-gray-300 transition-colors shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+              </svg>
+            </button>
+            <input id="rename-input" type="text" maxlength="200" aria-label="List name"
+                   class="hidden flex-1 min-w-0 bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-lg font-bold text-white focus:outline-hidden focus:border-indigo-500" />
+          <% } %>
+        </div>
+        <% if (!isOwner) { %>
+          <p class="text-xs text-gray-500 mt-0.5">Shared by <%= list.user.displayName %></p>
+        <% } else if (list.shares.length > 0) { %>
+          <p class="text-xs text-gray-500 mt-0.5">
+            Shared with <%= list.shares.map(s => s.user.displayName).join(', ') %>
+          </p>
+        <% } %>
+      </div>
+    </div>
+    <% if (isOwner) { %>
+      <form action="/lists/<%= list.id %>/delete" method="POST"
+            onsubmit="return confirm('Delete this list and all its items?')">
+        <button type="submit" class="text-xs text-gray-600 hover:text-red-400 transition-colors shrink-0">
+          Delete list
+        </button>
+      </form>
+    <% } %>
+  </div>
+
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <!-- Add item -->
+  <div class="flex gap-2">
+    <input type="text" id="new-item" placeholder="Add an item…"
+           class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-100
+                  placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+    <button onclick="addItem()"
+            class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition-colors">
+      Add
+    </button>
+  </div>
+
+  <!-- Items -->
+  <div id="items-list" class="bg-gray-900 border border-gray-800 rounded-xl divide-y divide-gray-800/50">
+
+    <div id="active-items">
+      <% active.forEach(item => { %>
+        <%- include('../partials/list-item', { item, listId: list.id }) %>
+      <% }); %>
+    </div>
+
+    <div id="empty-state" class="<%= active.length > 0 ? 'hidden' : '' %> px-4 py-8 text-center text-gray-600 text-sm">
+      Nothing to do — add an item above
+    </div>
+
+    <div id="done-items">
+      <% done.forEach(item => { %>
+        <%- include('../partials/list-item', { item, listId: list.id }) %>
+      <% }); %>
+    </div>
+
+  </div>
+
+  <!-- Send as text message (anyone with access) -->
+  <button type="button" onclick="shareListViaSMS()"
+          class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-green-400">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+    </svg>
+    Send as text message
+  </button>
+
+  <!-- Sharing panel (owner only) -->
+  <% if (isOwner) { %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Share this list</p>
+
+      <!-- Current shares -->
+      <% if (list.shares.length > 0) { %>
+        <div class="space-y-1">
+          <% list.shares.forEach(share => { %>
+            <div class="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-gray-800">
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="w-6 h-6 rounded-full bg-indigo-700 flex items-center justify-center text-[10px] font-semibold text-white shrink-0">
+                  <%= share.user.displayName.charAt(0).toUpperCase() %>
+                </div>
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-200 truncate"><%= share.user.displayName %></p>
+                  <p class="text-xs text-gray-500">@<%= share.user.username %></p>
+                </div>
+              </div>
+              <form action="/lists/<%= list.id %>/unshare/<%= share.user.id %>" method="POST">
+                <button type="submit" title="Remove access"
+                        class="text-gray-600 hover:text-red-400 transition-colors shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          <% }); %>
+        </div>
+      <% } %>
+
+      <!-- Add share form -->
+      <form action="/lists/<%= list.id %>/share" method="POST" class="flex gap-2">
+        <input type="text" name="username" placeholder="Username to share with…" autocomplete="off" list="shareable-users"
+               class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2 text-sm text-gray-100
+                      placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+        <datalist id="shareable-users">
+          <% shareableUsers.forEach(u => { %>
+            <option value="<%= u.username %>"><%= u.displayName %> (@<%= u.username %>)</option>
+          <% }); %>
+        </datalist>
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+          Share
+        </button>
+      </form>
+      <p class="text-xs text-gray-600">Shared users can add, edit, and check off items.</p>
+    </div>
+  <% } %>
+
+</div>
+
+<script src="/js/sortable.min.js"></script>
+<script>
+const LIST_ID = <%= list.id %>;
+// Escape "<" as \u003c so list text can never close this script tag
+let LIST_TITLE = <%- JSON.stringify(list.title).replace(/</g, '\\u003c') %>;
+const LIST_ACTIVE_TEXTS = <%- JSON.stringify(active.map(i => i.text)).replace(/</g, '\\u003c') %>;
+const LIST_DONE_TEXTS = <%- JSON.stringify(done.map(i => i.text)).replace(/</g, '\\u003c') %>;
+
+
+function startRename() {
+  const input = document.getElementById('rename-input');
+  input.value = document.getElementById('list-title').textContent;
+  document.getElementById('list-title').classList.add('hidden');
+  document.getElementById('rename-btn').classList.add('hidden');
+  input.classList.remove('hidden');
+  input.focus(); input.select();
+}
+function endRename() {
+  document.getElementById('rename-input').classList.add('hidden');
+  document.getElementById('list-title').classList.remove('hidden');
+  document.getElementById('rename-btn').classList.remove('hidden');
+}
+async function saveRename() {
+  const input = document.getElementById('rename-input');
+  const title = input.value.trim();
+  if (!title) return;
+  if (title === document.getElementById('list-title').textContent) return endRename();
+  const res = await fetch(`/lists/${LIST_ID}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-requested-with': 'fetch' },
+    body: `title=${encodeURIComponent(title)}`,
+  });
+  if (!res.ok) return;
+  document.getElementById('list-title').textContent = title;
+  document.title = title; LIST_TITLE = title;
+  endRename();
+}
+document.getElementById('rename-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter')  { e.preventDefault(); saveRename(); }
+  if (e.key === 'Escape') { e.preventDefault(); endRename(); }
+});
+function shareListViaSMS() {
+  const lines = [LIST_TITLE, ''];
+  if (LIST_ACTIVE_TEXTS.length === 0 && LIST_DONE_TEXTS.length === 0) {
+    lines.push('(no items)');
+  } else {
+    LIST_ACTIVE_TEXTS.forEach(t => lines.push('• ' + t));
+    LIST_DONE_TEXTS.forEach(t => lines.push('✓ ' + t));
+  }
+  window.location.href = 'sms:?body=' + encodeURIComponent(lines.join('\n'));
+}
+
+async function addItem() {
+  const input = document.getElementById('new-item');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const res = await fetch(`/lists/${LIST_ID}/items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-requested-with': 'fetch' },
+    body: `text=${encodeURIComponent(text)}`,
+  });
+  if (!res.ok) return;
+  const item = await res.json();
+  input.value = '';
+
+  document.getElementById('empty-state').classList.add('hidden');
+  document.getElementById('active-items').insertAdjacentHTML('beforeend', renderItem(item));
+}
+
+async function toggleItem(id) {
+  const res = await fetch(`/lists/${LIST_ID}/items/${id}/toggle`, {
+    method: 'POST',
+    headers: { 'x-requested-with': 'fetch' },
+  });
+  if (!res.ok) return;
+  const { checked } = await res.json();
+
+  const row = document.getElementById(`item-${id}`);
+  if (!row) return;
+
+  if (checked) {
+    row.querySelector('.item-text').classList.add('line-through', 'text-gray-600');
+    row.querySelector('.item-text').classList.remove('text-gray-100');
+    row.querySelector('input[type=checkbox]').checked = true;
+    row.querySelector('.drag-handle').classList.add('invisible');
+    document.getElementById('done-items').appendChild(row);
+  } else {
+    row.querySelector('.item-text').classList.remove('line-through', 'text-gray-600');
+    row.querySelector('.item-text').classList.add('text-gray-100');
+    row.querySelector('input[type=checkbox]').checked = false;
+    row.querySelector('.drag-handle').classList.remove('invisible');
+    document.getElementById('active-items').appendChild(row);
+  }
+
+  const active = document.getElementById('active-items').children.length;
+  document.getElementById('empty-state').classList.toggle('hidden', active > 0);
+}
+
+async function deleteItem(id) {
+  const res = await fetch(`/lists/${LIST_ID}/items/${id}/delete`, {
+    method: 'POST',
+    headers: { 'x-requested-with': 'fetch' },
+  });
+  if (!res.ok) return;
+  document.getElementById(`item-${id}`)?.remove();
+  const active = document.getElementById('active-items').children.length;
+  document.getElementById('empty-state').classList.toggle('hidden', active > 0);
+}
+
+function editItem(id) {
+  const row = document.getElementById(`item-${id}`);
+  const input = row.querySelector('.item-edit-input');
+  input.value = row.querySelector('.item-text').textContent;
+  row.querySelector('.item-text').classList.add('hidden');
+  row.querySelector('.item-view-actions').classList.add('hidden');
+  input.classList.remove('hidden');
+  row.querySelector('.item-edit-actions').classList.remove('hidden');
+  input.focus();
+  input.select();
+}
+
+function cancelEdit(id) {
+  const row = document.getElementById(`item-${id}`);
+  row.querySelector('.item-text').classList.remove('hidden');
+  row.querySelector('.item-view-actions').classList.remove('hidden');
+  row.querySelector('.item-edit-input').classList.add('hidden');
+  row.querySelector('.item-edit-actions').classList.add('hidden');
+}
+
+async function saveEdit(id) {
+  const row = document.getElementById(`item-${id}`);
+  const input = row.querySelector('.item-edit-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const res = await fetch(`/lists/${LIST_ID}/items/${id}/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'x-requested-with': 'fetch' },
+    body: `text=${encodeURIComponent(text)}`,
+  });
+  if (!res.ok) return;
+  row.querySelector('.item-text').textContent = text;
+  cancelEdit(id);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const DRAG_HANDLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" fill="currentColor" class="w-2.5 h-4">
+  <circle cx="2.5" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/>
+  <circle cx="2.5" cy="8" r="1.5"/><circle cx="7.5" cy="8" r="1.5"/>
+  <circle cx="2.5" cy="14" r="1.5"/><circle cx="7.5" cy="14" r="1.5"/>
+</svg>`;
+
+function renderItem(item) {
+  return `<div id="item-${item.id}" class="flex items-center gap-3 px-4 py-3">
+    <span class="drag-handle shrink-0 cursor-grab active:cursor-grabbing text-gray-700 hover:text-gray-500 touch-none ${item.checked ? 'invisible' : ''}">${DRAG_HANDLE_SVG}</span>
+    <input type="checkbox" ${item.checked ? 'checked' : ''}
+           onchange="toggleItem(${item.id})"
+           class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 shrink-0 cursor-pointer" />
+    <span class="item-text flex-1 text-sm ${item.checked ? 'line-through text-gray-600' : 'text-gray-100'}">${escHtml(item.text)}</span>
+    <input class="item-edit-input hidden flex-1 bg-gray-800 border border-gray-700 rounded-lg px-2 py-0.5 text-sm text-gray-100 focus:outline-hidden focus:border-indigo-500"
+           value="${escHtml(item.text)}">
+    <div class="item-view-actions flex items-center gap-1 shrink-0">
+      <button onclick="editItem(${item.id})" class="text-gray-700 hover:text-gray-300 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+        </svg>
+      </button>
+      <button onclick="deleteItem(${item.id})" class="text-gray-700 hover:text-red-400 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="item-edit-actions hidden flex items-center gap-1.5 shrink-0">
+      <button onclick="saveEdit(${item.id})" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium">Save</button>
+      <button onclick="cancelEdit(${item.id})" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Cancel</button>
+    </div>
+  </div>`;
+}
+
+document.getElementById('new-item').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+});
+
+document.getElementById('items-list').addEventListener('keydown', e => {
+  if (!e.target.classList.contains('item-edit-input')) return;
+  const id = parseInt(e.target.closest('[id^="item-"]').id.replace('item-', ''));
+  if (e.key === 'Enter')  { e.preventDefault(); saveEdit(id); }
+  if (e.key === 'Escape') { e.preventDefault(); cancelEdit(id); }
+});
+
+async function saveReorder() {
+  const items = [...document.getElementById('active-items').children];
+  const ids = items.map(el => parseInt(el.id.replace('item-', '')));
+  await fetch(`/lists/${LIST_ID}/items/reorder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-requested-with': 'fetch' },
+    body: JSON.stringify({ ids }),
+  });
+}
+
+Sortable.create(document.getElementById('active-items'), {
+  animation: 150,
+  handle: '.drag-handle',
+  ghostClass: 'opacity-40',
+  onEnd: saveReorder,
+});
+</script>

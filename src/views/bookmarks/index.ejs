@@ -1,0 +1,550 @@
+<div class="max-w-3xl mx-auto px-4 py-6 space-y-5">
+
+  <div class="flex items-center justify-between gap-3">
+    <%- include('../partials/page-heading', { heading: 'Bookmarks', description: 'Saved links, always a click away.' }) %>
+    <button type="button" onclick="toggleAddForm('new-bookmark-form')"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      New bookmark
+    </button>
+  </div>
+
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <!-- Add bookmark form -->
+  <form id="new-bookmark-form" action="/bookmarks" method="POST" class="<%= error ? '' : 'hidden' %> rounded-xl bg-gray-900 border border-gray-800 p-4 space-y-3">
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <input type="url" name="url" placeholder="https://example.com" required
+             class="w-full sm:flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <input type="text" name="title" placeholder="Title (optional)"
+             class="w-full sm:w-44 bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <button type="submit"
+              class="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+        Add
+      </button>
+    </div>
+    <div class="flex flex-col gap-2 sm:flex-row">
+      <input type="text" id="add-tags" name="tags" placeholder="Tags (comma-separated, optional)"
+             class="w-full sm:flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <input type="text" name="description" placeholder="Note (optional)"
+             class="w-full sm:flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+    </div>
+    <% if (tagList.length > 0) { %>
+      <div class="flex flex-wrap gap-1.5">
+        <% tagList.forEach(tag => { %>
+          <button type="button" onclick="addBmTag('add-tags', <%= JSON.stringify(tag) %>)"
+                  class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-500 hover:text-gray-200 hover:bg-gray-700 transition-colors border border-gray-700">
+            #<%= tag %>
+          </button>
+        <% }); %>
+      </div>
+    <% } %>
+  </form>
+
+  <!-- Search bar -->
+  <div class="relative">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+         class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+    <input type="text" id="bm-search" placeholder="Filter bookmarks…"
+           class="w-full bg-gray-900 border border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-gray-100
+                  placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+  </div>
+
+  <!-- Tag filter -->
+  <% if (allTags.length > 0) { %>
+    <div class="flex flex-wrap gap-1.5">
+      <a href="/bookmarks"
+         class="px-3 py-1 rounded-full text-xs font-medium transition-colors
+                <%= !activeTag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+        All
+      </a>
+      <% allTags.forEach(tag => { %>
+        <a href="/bookmarks?tag=<%= encodeURIComponent(tag) %>"
+           class="px-3 py-1 rounded-full text-xs font-medium transition-colors
+                  <%= activeTag === tag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+          #<%= tag %>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- Bulk form + action bar -->
+  <form id="bulk-form-bookmarks" action="/bookmarks/bulk" method="POST" class="inline"></form>
+  <div id="bulk-bar-bookmarks" class="hidden flex items-center gap-3 px-4 py-2.5 bg-indigo-950/50 border border-indigo-900 rounded-xl mb-2">
+    <span class="text-xs text-indigo-300 font-medium flex-1"><span id="bulk-count-bookmarks">0</span> selected</span>
+    <input type="hidden" name="action" form="bulk-form-bookmarks" value="delete">
+    <button type="submit" form="bulk-form-bookmarks"
+            onclick="return confirm('Delete selected bookmarks?')"
+            class="px-3 py-1 rounded-lg bg-red-700 hover:bg-red-600 text-white text-xs font-medium transition-colors">
+      Delete selected
+    </button>
+    <button type="button" onclick="clearBookmarkSelection()"
+            class="text-gray-500 hover:text-gray-300 text-xs transition-colors">Cancel</button>
+  </div>
+
+  <!-- Bookmark list -->
+  <% if (bookmarks.length === 0) { %>
+    <% if (activeTag) { %>
+      <%- include('../partials/empty-state', { message: 'No bookmarks match this filter.', action: { label: 'Clear filter', href: '/bookmarks' } }) %>
+    <% } else { %>
+      <%- include('../partials/empty-state', { message: 'No bookmarks yet.', action: { label: 'New bookmark', onclick: "toggleAddForm('new-bookmark-form')" } }) %>
+    <% } %>
+  <% } else { %>
+    <div class="space-y-2" id="bookmark-list">
+      <% bookmarks.forEach(bm => { %>
+        <%
+          let domain = '';
+          try { domain = new URL(bm.url).hostname.replace(/^www\./, ''); } catch(e) {}
+          const displayTitle = bm.title || domain || bm.url;
+        %>
+        <div class="bookmark-row relative overflow-hidden rounded-xl border border-gray-800"
+             data-bm-id="<%= bm.id %>"
+             data-bm-url="<%= bm.url %>"
+             data-bm-title="<%= (bm.title || '') %>"
+             data-bm-description="<%= (bm.description || '') %>"
+             data-bm-tags="<%= bm.tags.join(', ') %>"
+             data-bookmark="<%= [displayTitle, bm.url, bm.description, bm.tags.join(' ')].join(' ').toLowerCase() %>">
+
+          <!-- Swipe right hint: edit -->
+          <div class="swipe-hint-r absolute inset-0 flex items-center gap-2 pl-5 bg-blue-600 rounded-xl" style="opacity:0;pointer-events:none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white shrink-0">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+            </svg>
+            <span class="text-sm font-semibold text-white">Edit</span>
+          </div>
+
+          <!-- Swipe left hint: delete -->
+          <div class="swipe-hint-l absolute inset-0 flex items-center justify-end gap-2 pr-5 bg-red-700 rounded-xl" style="opacity:0;pointer-events:none">
+            <span class="text-sm font-semibold text-white">Delete</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white shrink-0">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </div>
+
+          <!-- Card content -->
+          <div class="swipe-content group flex items-start gap-3 bg-gray-900 px-4 py-3 hover:border-gray-700 transition-colors rounded-xl">
+
+            <input type="checkbox" name="ids" value="<%= bm.id %>" form="bulk-form-bookmarks"
+                   class="mt-0.5 w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900 shrink-0" />
+
+            <!-- Favicon -->
+            <img src="https://icons.duckduckgo.com/ip3/<%= encodeURIComponent(domain) %>.ico"
+                 alt="" width="16" height="16"
+                 class="mt-0.5 rounded shrink-0 opacity-80"
+                 onerror="this.style.display='none'" />
+
+            <!-- Main content -->
+            <div class="flex-1 min-w-0">
+              <% if (/^https?:\/\//i.test(bm.url)) { %>
+              <a href="<%= bm.url %>" target="_blank" rel="noopener noreferrer"
+                 class="text-sm font-medium text-gray-100 hover:text-indigo-400 transition-colors truncate block">
+                <%= displayTitle %>
+              </a>
+              <% } else { %>
+              <span class="text-sm font-medium text-gray-100 truncate block"><%= displayTitle %></span>
+              <% } %>
+              <p class="text-xs text-gray-500 truncate mt-0.5"><%= bm.url %></p>
+              <% if (bm.description) { %>
+                <p class="text-xs text-gray-400 mt-1"><%= bm.description %></p>
+              <% } %>
+              <% if (bm.tags.length > 0) { %>
+                <div class="flex flex-wrap gap-1 mt-1.5">
+                  <% bm.tags.forEach(tag => { %>
+                    <a href="/bookmarks?tag=<%= encodeURIComponent(tag) %>"
+                       class="text-[11px] text-gray-500 hover:text-gray-300 transition-colors">#<%= tag %></a>
+                  <% }); %>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+
+              <!-- Share -->
+              <button type="button" title="Share"
+                      data-bm-id="<%= bm.id %>"
+                      data-bm-url="<%= bm.url %>"
+                      data-bm-title="<%= displayTitle %>"
+                      onclick="openShare(parseInt(this.dataset.bmId), this.dataset.bmUrl, this.dataset.bmTitle)"
+                      class="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                </svg>
+              </button>
+
+              <!-- Open in new window -->
+              <button type="button" title="Open in new tab"
+                      onclick="window.open('<%= bm.url.replace(/'/g, '%27') %>', '_blank', 'width=1280,height=800,noopener,noreferrer')"
+                      class="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </button>
+
+              <!-- Edit -->
+              <button type="button" title="Edit"
+                      onclick="openEdit(<%= bm.id %>, `<%= (bm.url || '').replace(/`/g, '\\`') %>`, `<%= (bm.title || '').replace(/`/g, '\\`') %>`, `<%= (bm.description || '').replace(/`/g, '\\`') %>`, `<%= (bm.tags.join(', ')).replace(/`/g, '\\`') %>`)"
+                      class="p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+              </button>
+
+              <!-- Delete -->
+              <form action="/bookmarks/<%= bm.id %>/delete" method="POST" class="inline"
+                    onsubmit="return confirm('Delete this bookmark?')">
+                <button type="submit" title="Delete"
+                        class="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+
+</div>
+
+<!-- Share modal -->
+<div id="share-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-sm space-y-5">
+
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-semibold text-gray-200">Share Bookmark</h2>
+        <p id="share-modal-title" class="text-xs text-gray-500 truncate mt-0.5 max-w-[220px]"></p>
+      </div>
+      <button onclick="closeShare()" class="text-gray-600 hover:text-gray-300 transition-colors p-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+          <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Send to Obelo user -->
+    <div class="space-y-2">
+      <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Send to Obelo user</p>
+      <div class="flex gap-2">
+        <input type="text" id="share-username" placeholder="username" list="shareable-users"
+               autocomplete="off"
+               class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100
+                      placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();sendToUser();}" />
+        <datalist id="shareable-users">
+          <% shareableUsers.forEach(u => { %>
+            <option value="<%= u.username %>"><%= u.displayName %> (@<%= u.username %>)</option>
+          <% }); %>
+        </datalist>
+        <button onclick="sendToUser()" id="share-send-btn"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+          Send
+        </button>
+      </div>
+      <p id="share-user-msg" class="text-xs hidden"></p>
+    </div>
+
+    <div class="border-t border-gray-800"></div>
+
+    <!-- Share via text -->
+    <button onclick="shareViaSMS()" id="share-sms-btn"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors text-sm font-medium text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0 text-green-400">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+      </svg>
+      Share via text message
+    </button>
+
+    <!-- Copy link -->
+    <button onclick="copyLink()" id="copy-link-btn"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition-colors text-sm font-medium text-left">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0 text-indigo-400" id="copy-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+      </svg>
+      <span id="copy-link-label">Copy link</span>
+    </button>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 w-full max-w-lg space-y-4">
+    <h2 class="text-sm font-semibold text-gray-200">Edit Bookmark</h2>
+    <form id="edit-form" method="POST" class="space-y-3">
+      <input type="url" id="edit-url" name="url" placeholder="https://example.com" required
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <input type="text" id="edit-title" name="title" placeholder="Title (optional)"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <input type="text" id="edit-description" name="description" placeholder="Note (optional)"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <input type="text" id="edit-tags" name="tags" placeholder="Tags (comma-separated)"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm text-gray-100
+                    placeholder-gray-600 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      <% if (tagList.length > 0) { %>
+        <div class="flex flex-wrap gap-1.5">
+          <% tagList.forEach(tag => { %>
+            <button type="button" onclick="addBmTag('edit-tags', <%= JSON.stringify(tag) %>)"
+                    class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-500 hover:text-gray-200 hover:bg-gray-700 transition-colors border border-gray-700">
+              #<%= tag %>
+            </button>
+          <% }); %>
+        </div>
+      <% } %>
+      <div class="flex gap-2 pt-1">
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
+          Save
+        </button>
+        <button type="button" onclick="closeEdit()"
+                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // "New …" button opens the add form, and focuses its first field
+  function toggleAddForm(id) {
+    var form = document.getElementById(id);
+    form.classList.toggle('hidden');
+    if (!form.classList.contains('hidden')) form.querySelector('input:not([type=hidden])').focus();
+  }
+  // Bulk selection
+  const _bmCheckboxes = () => document.querySelectorAll('input[name="ids"][form="bulk-form-bookmarks"]');
+  const _bmBulkBar    = document.getElementById('bulk-bar-bookmarks');
+  const _bmBulkCount  = document.getElementById('bulk-count-bookmarks');
+
+  function updateBookmarkBulkBar() {
+    const checked = [..._bmCheckboxes()].filter(c => c.checked);
+    if (checked.length > 0) {
+      _bmBulkBar.classList.remove('hidden');
+      _bmBulkCount.textContent = checked.length;
+    } else {
+      _bmBulkBar.classList.add('hidden');
+    }
+  }
+
+  function clearBookmarkSelection() {
+    _bmCheckboxes().forEach(c => c.checked = false);
+    _bmBulkBar.classList.add('hidden');
+  }
+
+  document.getElementById('bookmark-list')?.addEventListener('change', e => {
+    if (e.target.type === 'checkbox' && e.target.form?.id === 'bulk-form-bookmarks') updateBookmarkBulkBar();
+  });
+
+  function addBmTag(inputId, tag) {
+    const input = document.getElementById(inputId);
+    const current = input.value.split(',').map(t => t.trim()).filter(Boolean);
+    if (!current.includes(tag)) {
+      current.push(tag);
+      input.value = current.join(', ');
+    }
+  }
+
+  const searchInput = document.getElementById('bm-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.toLowerCase();
+      document.querySelectorAll('[data-bookmark]').forEach(el => {
+        el.style.display = el.dataset.bookmark.includes(q) ? '' : 'none';
+      });
+    });
+  }
+
+  // ── Mobile swipe: right = open, left = delete ───────────────────────────
+  (function () {
+    var list = document.getElementById('bookmark-list');
+    if (!list || !('ontouchstart' in window)) return;
+
+    var THRESHOLD = 72;
+    var startX, startY, activeRow, activeContent, locked;
+
+    list.addEventListener('touchstart', function (e) {
+      var row = e.target.closest('.bookmark-row[data-bm-id]');
+      if (!row) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeRow = row;
+      activeContent = row.querySelector('.swipe-content');
+      locked = false;
+    }, { passive: true });
+
+    list.addEventListener('touchmove', function (e) {
+      if (!activeRow || locked) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > Math.abs(dx) + 8) { locked = true; activeRow = null; return; }
+      if (Math.abs(dx) < 6) return;
+      e.preventDefault();
+      activeContent.style.transform = 'translateX(' + dx + 'px)';
+      activeContent.style.transition = 'none';
+      var ratio = Math.min(1, Math.abs(dx) / THRESHOLD);
+      activeRow.querySelector('.swipe-hint-r').style.opacity = dx > 0 ? ratio : 0;
+      activeRow.querySelector('.swipe-hint-l').style.opacity = dx < 0 ? ratio : 0;
+    }, { passive: false });
+
+    list.addEventListener('touchend', function (e) {
+      if (!activeRow || locked) { activeRow = null; return; }
+      var dx = e.changedTouches[0].clientX - startX;
+      var row = activeRow;
+      activeRow = null;
+      if (dx > THRESHOLD) swipeEdit(row);
+      else if (dx < -THRESHOLD) swipeDelete(row);
+      else snapBack(row);
+    }, { passive: true });
+
+    function snapBack(row) {
+      var c = row.querySelector('.swipe-content');
+      c.style.transform = 'translateX(0)';
+      c.style.transition = 'transform .25s ease';
+      row.querySelector('.swipe-hint-r').style.opacity = 0;
+      row.querySelector('.swipe-hint-l').style.opacity = 0;
+    }
+
+    function animateOut(row, dir) {
+      var c = row.querySelector('.swipe-content');
+      c.style.transform = 'translateX(' + (dir === 'r' ? '110%' : '-110%') + ')';
+      c.style.transition = 'transform .22s ease';
+      setTimeout(function () {
+        var h = row.offsetHeight;
+        row.style.height = h + 'px';
+        row.style.overflow = 'hidden';
+        row.style.transition = 'height .18s ease, opacity .18s ease';
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            row.style.height = '0';
+            row.style.opacity = '0';
+          });
+        });
+        setTimeout(function () { row.remove(); }, 200);
+      }, 230);
+    }
+
+    function swipeEdit(row) {
+      snapBack(row);
+      openEdit(
+        parseInt(row.dataset.bmId),
+        row.dataset.bmUrl || '',
+        row.dataset.bmTitle || '',
+        row.dataset.bmDescription || '',
+        row.dataset.bmTags || ''
+      );
+    }
+
+    function swipeDelete(row) {
+      var id = row.dataset.bmId;
+      animateOut(row, 'l');
+      fetch('/bookmarks/' + id + '/delete', { method: 'POST' });
+    }
+  })();
+
+  // ── Share modal ─────────────────────────────────────────────────────────
+  var _shareId = null, _shareUrl = null;
+
+  function openShare(id, url, title) {
+    _shareId  = id;
+    _shareUrl = url;
+    document.getElementById('share-modal-title').textContent = title;
+    document.getElementById('share-username').value = '';
+    var msg = document.getElementById('share-user-msg');
+    msg.className = 'text-xs hidden';
+    msg.textContent = '';
+    document.getElementById('copy-link-label').textContent = 'Copy link';
+    document.getElementById('share-modal').classList.remove('hidden');
+    document.getElementById('share-username').focus();
+  }
+
+  function closeShare() {
+    document.getElementById('share-modal').classList.add('hidden');
+  }
+
+  function sendToUser() {
+    var username = document.getElementById('share-username').value.trim().replace(/^@/, '');
+    if (!username) return;
+    var btn  = document.getElementById('share-send-btn');
+    var msg  = document.getElementById('share-user-msg');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    msg.className = 'text-xs hidden';
+    fetch('/bookmarks/' + _shareId + '/share-to-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'username=' + encodeURIComponent(username),
+    })
+      .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+      .then(function(res) {
+        msg.textContent = res.data.message || res.data.error || 'Unknown error';
+        msg.className = 'text-xs ' + (res.ok ? 'text-green-400' : 'text-red-400');
+        msg.classList.remove('hidden');
+        if (res.ok) document.getElementById('share-username').value = '';
+      })
+      .catch(function() {
+        msg.textContent = 'Something went wrong';
+        msg.className = 'text-xs text-red-400';
+        msg.classList.remove('hidden');
+      })
+      .finally(function() {
+        btn.disabled = false;
+        btn.textContent = 'Send';
+      });
+  }
+
+  function shareViaSMS() {
+    var text = (_shareUrl || '');
+    var label = document.getElementById('share-modal-title').textContent;
+    if (label && label !== _shareUrl) text = label + '\n' + _shareUrl;
+    window.location.href = 'sms:?body=' + encodeURIComponent(text);
+  }
+
+  function copyLink() {
+    if (!_shareUrl) return;
+    navigator.clipboard.writeText(_shareUrl).then(function() {
+      var lbl = document.getElementById('copy-link-label');
+      lbl.textContent = 'Copied!';
+      setTimeout(function() { lbl.textContent = 'Copy link'; }, 2000);
+    });
+  }
+
+  document.getElementById('share-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeShare();
+  });
+
+  // ── Edit modal ──────────────────────────────────────────────────────────
+  function openEdit(id, url, title, description, tags) {
+    document.getElementById('edit-form').action = '/bookmarks/' + id + '/edit';
+    document.getElementById('edit-url').value = url;
+    document.getElementById('edit-title').value = title;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('edit-tags').value = tags;
+    document.getElementById('edit-modal').classList.remove('hidden');
+    document.getElementById('edit-url').focus();
+  }
+  function closeEdit() {
+    document.getElementById('edit-modal').classList.add('hidden');
+  }
+  document.getElementById('edit-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('edit-modal')) closeEdit();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeEdit(); closeShare(); }
+  });
+</script>

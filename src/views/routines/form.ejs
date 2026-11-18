@@ -1,0 +1,192 @@
+<% const isEdit = !!(routine && routine.id); %>
+<% const startDateVal = routine.startDate
+     ? (routine.startDate instanceof Date
+         ? routine.startDate.toISOString().split('T')[0]
+         : String(routine.startDate).split('T')[0])
+     : ''; %>
+
+<div class="max-w-xl mx-auto py-6 px-4">
+
+  <a href="<%= isEdit ? `/routines/${routine.id}` : '/routines' %>"
+     class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+    </svg>
+    <%= isEdit ? 'Routine' : 'Routines' %>
+  </a>
+
+  <h1 class="text-xl font-bold text-white mb-6"><%= isEdit ? 'Edit routine' : 'New routine' %></h1>
+
+  <% if (errors && errors.length) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm">
+      <% errors.forEach(e => { %><div><%= e %></div><% }); %>
+    </div>
+  <% } %>
+
+  <form method="POST"
+        action="<%= isEdit ? `/routines/${routine.id}` : '/routines' %>"
+        class="space-y-5">
+
+    <!-- Title -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Title <span class="text-red-400">*</span></label>
+      <input type="text" name="title" required autofocus
+             value="<%= routine.title || '' %>"
+             placeholder="Morning walk, Read 20 pages…"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+      <textarea name="description" rows="2"
+                placeholder="Optional notes…"
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"><%= routine.description || '' %></textarea>
+    </div>
+
+    <!-- Time of day + Specific time -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Time of day</label>
+        <select name="timeOfDay" id="timeOfDaySelect"
+                onchange="document.getElementById('specificTimeField').classList.toggle('hidden', this.value === 'anytime')"
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          <% ['morning','afternoon','evening','anytime'].forEach(tod => { %>
+            <option value="<%= tod %>" <%= (routine.timeOfDay || 'anytime') === tod ? 'selected' : '' %>>
+              <%= tod.charAt(0).toUpperCase() + tod.slice(1) %>
+            </option>
+          <% }); %>
+        </select>
+      </div>
+      <div id="specificTimeField" class="<%= (routine.timeOfDay === 'anytime' || !routine.timeOfDay) ? 'hidden' : '' %>">
+        <label class="block text-sm font-medium text-gray-300 mb-1">Specific time</label>
+        <input type="time" name="specificTime"
+               value="<%= routine.specificTime || '' %>"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      </div>
+    </div>
+
+    <!-- Frequency -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Frequency</label>
+      <select name="frequency" id="frequencySelect"
+              onchange="document.getElementById('scheduleDaysField').classList.toggle('hidden', !['weekly','custom'].includes(this.value))"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <% ['daily','weekdays','weekends','weekly','custom'].forEach(f => { %>
+          <option value="<%= f %>" <%= (routine.frequency || 'daily') === f ? 'selected' : '' %>>
+            <%= {daily:'Daily',weekdays:'Weekdays (Mon–Fri)',weekends:'Weekends',weekly:'Weekly (pick a day)',custom:'Custom days'}[f] %>
+          </option>
+        <% }); %>
+      </select>
+    </div>
+
+    <!-- Schedule days (shown for weekly/custom) -->
+    <div id="scheduleDaysField"
+         class="<%= ['weekly','custom'].includes(routine.frequency) ? '' : 'hidden' %>">
+      <label class="block text-sm font-medium text-gray-300 mb-2">Days</label>
+      <div class="flex flex-wrap gap-2">
+        <% DAYS.forEach(day => { %>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" name="scheduleDays" value="<%= day %>"
+                   <%= (routine.scheduleDays || []).includes(day) ? 'checked' : '' %>
+                   class="w-4 h-4 accent-indigo-500">
+            <span class="text-sm text-gray-300"><%= day %></span>
+          </label>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Ongoing vs Time-limited toggle -->
+    <div class="bg-gray-800/50 rounded-lg border border-gray-700 p-4 space-y-3">
+      <div class="text-sm font-medium text-gray-300">Duration</div>
+      <div class="flex gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="_durationType" value="ongoing"
+                 <%= !routine.durationDays ? 'checked' : '' %>
+                 onchange="document.getElementById('timeLimitedFields').classList.add('hidden');
+                           document.querySelector('[name=durationDays]').value='';
+                           document.querySelector('[name=startDate]').value='';"
+                 class="accent-indigo-500">
+          <span class="text-sm text-gray-300">Ongoing</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="_durationType" value="timelimited"
+                 <%= routine.durationDays ? 'checked' : '' %>
+                 onchange="document.getElementById('timeLimitedFields').classList.remove('hidden');"
+                 class="accent-indigo-500">
+          <span class="text-sm text-gray-300">Time-limited</span>
+        </label>
+      </div>
+      <div id="timeLimitedFields" class="<%= routine.durationDays ? '' : 'hidden' %> grid grid-cols-2 gap-4 pt-1">
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Duration (days)</label>
+          <input type="number" name="durationDays" min="1" max="365"
+                 value="<%= routine.durationDays || '' %>"
+                 placeholder="e.g. 30"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500 mb-1">Start date</label>
+          <input type="date" name="startDate"
+                 value="<%= startDateVal %>"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+        <p class="col-span-2 text-xs text-gray-600 -mt-1">Routine auto-archives once the duration is reached.</p>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div>
+      <label for="tags" class="block text-sm font-medium text-gray-300 mb-1.5">Tags</label>
+      <input type="text" id="tags" name="tags"
+             value="<%= routine && routine.tags ? (Array.isArray(routine.tags) ? routine.tags.join(', ') : routine.tags) : '' %>"
+             class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+             placeholder="health, morning, habit  (comma-separated)" />
+      <% if (tagList && tagList.length > 0) { %>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <% tagList.forEach(tag => { %>
+            <button type="button" onclick="addTag(<%= JSON.stringify(tag) %>)"
+                    class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-500 hover:text-gray-200 hover:bg-gray-700 border border-gray-700 transition-colors">
+              #<%= tag %>
+            </button>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-gray-800/50 rounded-lg border border-gray-700 p-4">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" name="notify" id="notifyCheck"
+               <%= routine.notify ? 'checked' : '' %>
+               class="w-4 h-4 accent-indigo-500">
+        <div>
+          <span class="text-sm text-gray-300">Push notification</span>
+          <p class="text-xs text-gray-600 mt-0.5">Sends at the specific time set above, via Pushover and/or ntfy (set up in Settings → Notifications).</p>
+        </div>
+      </label>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit"
+              class="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+        <%= isEdit ? 'Save changes' : 'Create routine' %>
+      </button>
+      <a href="<%= isEdit ? `/routines/${routine.id}` : '/routines' %>"
+         class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-400 hover:text-gray-200 border border-gray-700 transition-colors">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+function addTag(tag) {
+  const input = document.getElementById('tags');
+  const current = input.value.split(',').map(t => t.trim()).filter(Boolean);
+  if (!current.includes(tag)) {
+    input.value = current.length ? current.join(', ') + ', ' + tag : tag;
+  }
+}
+</script>

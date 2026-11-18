@@ -1,0 +1,158 @@
+<div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Header -->
+  <%- include('../partials/page-heading', { heading: 'Admin', description: 'System dashboard and configuration.' }) %>
+
+  <% if (success) { %>
+    <div class="rounded-xl bg-emerald-950 border border-emerald-800 px-4 py-3 text-sm text-emerald-300"><%= success %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <!-- Setup checklist -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+      <h2 class="text-sm font-semibold text-white">Setup</h2>
+      <span class="text-xs text-gray-500">
+        <%= setup.filter(i => i.ok === true).length %> of <%= setup.filter(i => i.ok !== null).length %> set up
+      </span>
+    </div>
+    <ul class="divide-y divide-gray-800">
+      <% setup.forEach(item => { %>
+        <li class="flex items-start gap-3 px-5 py-3">
+          <span class="mt-1.5 w-2 h-2 rounded-full shrink-0
+                       <%= item.ok === true ? 'bg-emerald-400' : item.ok === null ? 'bg-gray-600' : item.required ? 'bg-red-400' : 'bg-amber-400' %>"></span>
+          <div class="min-w-0">
+            <p class="text-sm text-gray-200">
+              <%= item.label %>
+              <% if (item.ok === true) { %><span class="text-xs text-emerald-400 ml-1">set up</span><% } %>
+              <% if (item.ok === false) { %><span class="text-xs <%= item.required ? 'text-red-400' : 'text-gray-500' %> ml-1"><%= item.required ? 'needed' : 'not set up' %></span><% } %>
+              <% if (item.ok === null) { %><span class="text-xs text-gray-500 ml-1">not checked by the app</span><% } %>
+            </p>
+            <% if (item.ok !== true) { %><p class="text-xs text-gray-500 mt-0.5"><%= item.hint %></p><% } %>
+          </div>
+        </li>
+      <% }); %>
+    </ul>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <% [
+      { label: 'Users',     value: stats.userCount },
+      { label: 'Notes',     value: stats.noteCount },
+      { label: 'Tasks',     value: stats.taskCount },
+      { label: 'Reminders', value: stats.reminderCount },
+    ].forEach(s => { %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 text-center">
+        <p class="text-2xl font-bold text-white"><%= s.value %></p>
+        <p class="text-xs text-gray-500 mt-0.5"><%= s.label %></p>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Quick nav -->
+  <div class="flex gap-3">
+    <a href="/admin/users"
+       class="flex-1 text-center py-2 bg-gray-900 border border-gray-800 rounded-xl text-sm text-gray-400 hover:text-gray-200 hover:border-gray-700 transition-colors">
+      Manage Users
+    </a>
+    <a href="/admin/logs"
+       class="flex-1 text-center py-2 bg-gray-900 border border-gray-800 rounded-xl text-sm text-gray-400 hover:text-gray-200 hover:border-gray-700 transition-colors">
+      View Logs
+    </a>
+  </div>
+
+  <!-- Recent users -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-gray-800">
+      <h2 class="text-sm font-semibold text-white">Recent Users</h2>
+      <a href="/admin/users" class="text-xs text-indigo-400 hover:text-indigo-300">View all →</a>
+    </div>
+    <div class="divide-y divide-gray-800">
+      <% recentUsers.forEach(u => { %>
+        <div class="flex items-center gap-3 px-5 py-3">
+          <div class="w-7 h-7 rounded-full shrink-0">
+            <% if (recentGravatars[u.id]) { %>
+              <img src="<%= recentGravatars[u.id] %>"
+                   class="w-7 h-7 rounded-full object-cover bg-indigo-700"
+                   onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                   alt="<%= u.displayName %>" />
+              <div class="w-7 h-7 rounded-full bg-indigo-700 items-center justify-center text-xs font-semibold text-white" style="display:none">
+                <%= u.displayName.charAt(0).toUpperCase() %>
+              </div>
+            <% } else { %>
+              <div class="w-7 h-7 rounded-full bg-indigo-700 flex items-center justify-center text-xs font-semibold text-white">
+                <%= u.displayName.charAt(0).toUpperCase() %>
+              </div>
+            <% } %>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm text-gray-100 truncate"><%= u.displayName %>
+              <% if (u.role === 'admin') { %>
+                <span class="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400">admin</span>
+              <% } %>
+            </p>
+            <p class="text-xs text-gray-500 truncate">@<%= u.username %><%= u.email ? ` · ${u.email}` : '' %></p>
+          </div>
+          <p class="text-xs text-gray-600 shrink-0">
+            <%= new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+          </p>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+  <!-- System settings -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl">
+    <div class="px-5 py-3 border-b border-gray-800">
+      <h2 class="text-sm font-semibold text-white">System Settings</h2>
+    </div>
+    <form action="/admin/settings" method="POST" class="px-5 py-4 space-y-4">
+
+      <label class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm text-gray-100">Create accounts on first SSO sign-in</p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            When on, anyone your SSO provider lets through gets a Obelo account automatically.
+            When off, SSO only signs in people who already have an account — create it under Users first, with the same email as their SSO account.
+            <% if (!oidcConfigured) { %><span class="text-amber-400">SSO isn't configured on this server, so this has no effect.</span><% } %>
+          </p>
+        </div>
+        <input type="checkbox" name="sso_create_accounts"
+               class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+               <%= settings.sso_create_accounts === 'true' ? 'checked' : '' %>>
+      </label>
+
+      <label class="flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm text-gray-100">Allow password sign-in</p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            When off, people can only sign in with SSO. It can only be turned off while SSO is set up, so you can't lock everyone out.
+            <% if (!oidcConfigured) { %><span class="text-amber-400">SSO isn't configured on this server, so passwords stay on.</span><% } %>
+          </p>
+        </div>
+        <input type="checkbox" name="password_login"
+               class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500"
+               <%= settings.password_login !== 'false' ? 'checked' : '' %>>
+      </label>
+
+      <div>
+        <label class="block text-sm text-gray-100 mb-1.5">Maintenance message</label>
+        <p class="text-xs text-gray-500 mb-2">Shown as a banner to all users when non-empty</p>
+        <textarea name="maintenance_message" rows="2"
+                  placeholder="e.g. Scheduled maintenance tonight 11pm–1am EST"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-hidden focus:border-indigo-500 resize-none"><%= settings.maintenance_message || '' %></textarea>
+      </div>
+
+      <div class="flex justify-end">
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
+          Save settings
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>

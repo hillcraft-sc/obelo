@@ -1,0 +1,82 @@
+<% const _mobileKeys = mobileNavModules.map(m => m.key); %>
+<% const _overflowModules = enabledModules.filter(m => !_mobileKeys.includes(m.key)); %>
+
+<nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-40">
+  <div class="flex items-center justify-around px-2 py-2">
+    <% mobileNavModules.forEach(mod => { %>
+      <% const isActive = currentPath === mod.route || (mod.route !== '/' && currentPath.startsWith(mod.route)); %>
+      <a href="<%= mod.route %>"
+         class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors duration-150
+                <%= isActive ? 'text-indigo-400' : 'text-gray-500 hover:text-gray-300' %>">
+        <%- mod.icon %>
+        <span class="text-[10px] font-medium"><%= mod.label %></span>
+      </a>
+    <% }); %>
+
+    <button onclick="toggleMoreMenu()"
+            class="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-colors duration-150
+                   text-gray-500 hover:text-gray-300" id="more-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+           stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+      <span class="text-[10px] font-medium">More</span>
+    </button>
+  </div>
+</nav>
+
+<!-- Backdrop -->
+<div id="more-backdrop"
+     class="lg:hidden fixed inset-0 bg-black/50 z-40 hidden"
+     onclick="toggleMoreMenu()"></div>
+
+<!-- Slide-up sheet -->
+<div id="more-sheet"
+     class="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 z-50
+            rounded-t-2xl translate-y-full transition-transform duration-300 ease-out pb-safe">
+
+  <!-- Handle -->
+  <div class="flex justify-center pt-3 pb-1">
+    <div class="w-10 h-1 rounded-full bg-gray-700"></div>
+  </div>
+
+  <div class="px-4 py-3 border-b border-gray-800">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">More</p>
+  </div>
+
+  <div class="grid grid-cols-4 gap-1 p-4 pb-8">
+    <% _overflowModules.forEach(mod => { %>
+      <% const isActive = currentPath === mod.route || (mod.route !== '/' && currentPath.startsWith(mod.route)); %>
+      <a href="<%= mod.route %>" onclick="toggleMoreMenu()"
+         class="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors
+                <%= isActive ? 'bg-indigo-600/20 text-indigo-400' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200' %>">
+        <%- mod.icon %>
+        <span class="text-[10px] font-medium text-center leading-tight"><%= mod.label %></span>
+        <% if (mod.beta) { %>
+          <span class="text-[9px] font-semibold px-1 py-0.5 rounded-full bg-amber-500/20 text-amber-400 leading-none">beta</span>
+        <% } %>
+      </a>
+    <% }); %>
+
+    <!-- Help — always available in More -->
+    <% const _isHelp = currentPath.startsWith('/help'); %>
+    <a href="/help" onclick="toggleMoreMenu()"
+       class="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-colors
+              <%= _isHelp ? 'bg-indigo-600/20 text-indigo-400' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200' %>">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+      </svg>
+      <span class="text-[10px] font-medium text-center leading-tight">Help</span>
+    </a>
+  </div>
+</div>
+
+<script>
+  function toggleMoreMenu() {
+    const sheet    = document.getElementById('more-sheet');
+    const backdrop = document.getElementById('more-backdrop');
+    const open = !sheet.classList.contains('translate-y-full');
+    sheet.classList.toggle('translate-y-full', open);
+    backdrop.classList.toggle('hidden', open);
+  }
+</script>

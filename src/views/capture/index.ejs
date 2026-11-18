@@ -1,0 +1,270 @@
+<div class="max-w-xl mx-auto py-6 px-4 space-y-5">
+
+  <%- include('../partials/page-heading', { heading: 'Capture', description: 'Type anything — AI will figure it out.' }) %>
+
+  <% if (!locals.aiEnabled) { %>
+    <div class="px-4 py-3 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 text-sm">
+      AI isn't set up on this server, so Capture saves what you type as a note. To turn on AI, the server admin sets the <code>AI_*</code> variables in <code>.env</code>.
+    </div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm"><%= error %></div>
+  <% } %>
+
+  <!-- ── Input form ────────────────────────────────────────────────────────── -->
+  <% if (!draft) { %>
+  <form method="POST" action="/capture" id="captureForm" class="space-y-3">
+    <div class="relative">
+      <textarea name="raw" id="rawInput" rows="4" autofocus
+                placeholder="remind me to call the dentist tuesday 3pm&#10;grocery list: milk, eggs, bread, pasta&#10;bookmark reactjs.org — React docs&#10;note - ideas for the weekend trip, tag travel&#10;book rec: four thousand weeks by oliver burkeman"
+                class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3.5 text-white text-sm
+                       placeholder-gray-600 focus:outline-hidden focus:border-indigo-500 resize-none leading-relaxed"><%= prefill %></textarea>
+      <!-- Mic button -->
+      <button type="button" id="micBtn"
+              class="absolute bottom-3 right-3 p-2 rounded-lg text-gray-600 hover:text-indigo-400 hover:bg-gray-800 transition-colors"
+              title="Voice input">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+        </svg>
+      </button>
+    </div>
+    <% if (locals.aiEnabled) { %>
+    <!-- Type chosen before processing (Auto lets the AI decide) -->
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1.5">Type</label>
+      <div class="flex flex-wrap gap-1 p-1 bg-gray-800 rounded-lg w-fit">
+        <% [['auto', 'Auto']].concat(Object.entries(TYPE_LABELS)).forEach(([val, label]) => { %>
+          <label class="relative cursor-pointer">
+            <input type="radio" name="hint" value="<%= val %>" <%= (locals.chosenType || 'auto') === val ? 'checked' : '' %>
+                   class="sr-only peer" />
+            <span class="block px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                         text-gray-400 peer-checked:bg-gray-700 peer-checked:text-gray-100">
+              <%= label %>
+            </span>
+          </label>
+        <% }); %>
+      </div>
+      <p class="text-xs text-gray-600 mt-1.5">Auto lets the AI decide.</p>
+    </div>
+    <% } %>
+    <button type="submit" id="submitBtn"
+            class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2">
+      <span id="submitLabel"><%= locals.aiEnabled ? 'Process with AI' : 'Save as note' %></span>
+      <span id="submitSpinner" class="hidden">
+        <svg class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 4.418 4 4.418 4 10 4 12z"></path>
+        </svg>
+        Processing…
+      </span>
+    </button>
+  </form>
+
+  <% } %>
+
+  <!-- ── AI suggestion card ─────────────────────────────────────────────── -->
+  <% if (draft) { %>
+  <% const s = draft.suggestion; %>
+
+  <div class="bg-gray-900 border border-gray-700 rounded-xl overflow-hidden">
+    <!-- Header -->
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-base" id="headerIcon"><%= TYPE_ICONS[s.type] || '📝' %></span>
+        <span class="text-sm font-semibold text-white" id="headerLabel"><%= TYPE_LABELS[s.type] || s.type %></span>
+        <% if (s.confidence === 'low') { %>
+          <span class="px-2 py-0.5 rounded-full bg-amber-900/50 text-amber-400 text-[10px] font-medium">Low confidence — check fields</span>
+        <% } else if (s.confidence === 'medium') { %>
+          <span class="px-2 py-0.5 rounded-full bg-blue-900/50 text-blue-400 text-[10px] font-medium">Medium confidence</span>
+        <% } %>
+      </div>
+      <span class="text-xs text-gray-600 italic truncate max-w-48">"<%= draft.rawInput %>"</span>
+    </div>
+
+    <!-- Editable fields -->
+    <form method="POST" action="/capture/<%= draft.id %>/confirm" class="p-5 space-y-4">
+
+      <!-- Type selector -->
+      <div class="flex gap-2 flex-wrap">
+        <% ['task','reminder','note','journal','quote','list','bookmark'].forEach(t => { %>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="type" value="<%= t %>" <%= s.type === t ? 'checked' : '' %>
+                   class="accent-indigo-500">
+            <span class="text-xs text-gray-400"><%= TYPE_LABELS[t] %></span>
+          </label>
+        <% }); %>
+      </div>
+
+      <!-- URL (bookmark only) -->
+      <div class="field-section" data-types="bookmark">
+        <label class="block text-xs font-medium text-gray-500 mb-1">URL <span class="text-red-400">*</span></label>
+        <input type="text" name="url" value="<%= s.url || '' %>"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500"
+               placeholder="https://example.com">
+      </div>
+
+      <!-- Title -->
+      <div class="field-section" data-types="task reminder note journal quote list bookmark">
+        <label class="block text-xs font-medium text-gray-500 mb-1" id="titleLabel">Title</label>
+        <input type="text" name="title" value="<%= s.title || '' %>" required
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500">
+      </div>
+
+      <!-- Content / Notes (not for list) -->
+      <div class="field-section" data-types="task reminder note journal quote bookmark">
+        <label class="block text-xs font-medium text-gray-500 mb-1" id="contentLabel">Notes</label>
+        <textarea name="content" rows="3"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500 resize-none"><%= s.content || '' %></textarea>
+      </div>
+
+      <!-- Items (list only) -->
+      <div class="field-section" data-types="list">
+        <label class="block text-xs font-medium text-gray-500 mb-1">Items <span class="text-gray-600">(one per line)</span></label>
+        <textarea name="items" rows="5"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500 resize-none font-mono"
+                  placeholder="Milk&#10;Eggs&#10;Bread"><%= (s.items || []).join('\n') %></textarea>
+      </div>
+
+      <!-- Due date / time (tasks + reminders) -->
+      <div class="field-section grid grid-cols-2 gap-3" data-types="task reminder">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Due date</label>
+          <input type="date" name="dueDate" value="<%= s.dueDate || '' %>"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Due time</label>
+          <input type="time" name="dueTime" value="<%= s.dueTime || '' %>"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500">
+        </div>
+      </div>
+
+      <!-- Priority (tasks + reminders) -->
+      <div class="field-section" data-types="task reminder">
+        <label class="block text-xs font-medium text-gray-500 mb-1">Priority</label>
+        <select name="priority"
+                class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500">
+          <% ['none','low','medium','high'].forEach(p => { %>
+            <option value="<%= p %>" <%= (s.priority || 'none') === p ? 'selected' : '' %>><%= p.charAt(0).toUpperCase() + p.slice(1) %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <!-- Tags (all types) -->
+      <div class="field-section" data-types="task reminder note journal quote list bookmark">
+        <%- include('../notes/_tag-picker', { allTags: locals.tagList || [], selectedTags: s.tags || [] }) %>
+      </div>
+
+      <!-- Source / Author (quotes + notes) -->
+      <div class="field-section grid grid-cols-2 gap-3" data-types="note journal quote">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Source</label>
+          <input type="text" name="source" value="<%= s.source || '' %>"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500"
+                 placeholder="Book, podcast, article…">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Author</label>
+          <input type="text" name="author" value="<%= s.author || '' %>"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:border-indigo-500"
+                 placeholder="Author name">
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 pt-1">
+        <button type="submit" id="saveBtn"
+                class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition-colors">
+          Save <span id="saveBtnType"><%= TYPE_LABELS[s.type] || 'Item' %></span>
+        </button>
+        <button type="button" onclick="document.getElementById('rejectForm').submit()"
+                class="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-sm transition-colors border border-gray-700">
+          Discard
+        </button>
+      </div>
+    </form>
+
+    <form id="rejectForm" method="POST" action="/capture/<%= draft.id %>/reject" class="hidden"></form>
+  </div>
+  <% } %>
+
+</div>
+
+<script src="/js/tag-picker.js"></script>
+<script>
+// Cmd+Return submits
+document.getElementById('rawInput')?.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    e.preventDefault();
+    this.closest('form')?.requestSubmit();
+  }
+});
+
+// Loading state
+document.getElementById('captureForm')?.addEventListener('submit', function() {
+  document.getElementById('submitLabel').classList.add('hidden');
+  document.getElementById('submitSpinner').classList.remove('hidden');
+  document.getElementById('submitBtn').disabled = true;
+});
+
+// Voice input
+const micBtn = document.getElementById('micBtn');
+const rawInput = document.getElementById('rawInput');
+if (micBtn && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+  let listening = false;
+
+  micBtn.addEventListener('click', () => {
+    if (listening) { recognition.stop(); return; }
+    recognition.start();
+    listening = true;
+    micBtn.classList.add('text-red-400');
+  });
+
+  recognition.onresult = e => {
+    rawInput.value += (rawInput.value ? ' ' : '') + e.results[0][0].transcript;
+  };
+  recognition.onend = () => {
+    listening = false;
+    micBtn.classList.remove('text-red-400');
+  };
+} else if (micBtn) {
+  micBtn.title = 'Voice input not supported in this browser';
+  micBtn.classList.add('opacity-30', 'cursor-not-allowed');
+}
+
+// ── Type-driven field visibility ──────────────────────────────────────────────
+const TYPE_LABELS_JS = <%= JSON.stringify(TYPE_LABELS) %>;
+const TYPE_ICONS_JS  = <%= JSON.stringify(TYPE_ICONS) %>;
+const TITLE_LABELS   = { task: 'Title', reminder: 'Title', note: 'Title', journal: 'Title', quote: 'Quote / Book title', list: 'List name', bookmark: 'Label' };
+const CONTENT_LABELS = { task: 'Notes', reminder: 'Notes', note: 'Content', journal: 'Content', quote: 'Notes', bookmark: 'Description' };
+
+function applyTypeVisibility(type) {
+  document.querySelectorAll('.field-section').forEach(el => {
+    const allowed = (el.dataset.types || '').split(' ');
+    el.style.display = allowed.includes(type) ? '' : 'none';
+  });
+  const tl = document.getElementById('titleLabel');
+  if (tl) tl.textContent = TITLE_LABELS[type] || 'Title';
+  const cl = document.getElementById('contentLabel');
+  if (cl) cl.textContent = CONTENT_LABELS[type] || 'Notes';
+  const saveLbl = document.getElementById('saveBtnType');
+  if (saveLbl) saveLbl.textContent = TYPE_LABELS_JS[type] || 'Item';
+  const icon = document.getElementById('headerIcon');
+  if (icon) icon.textContent = TYPE_ICONS_JS[type] || '📝';
+  const hdr = document.getElementById('headerLabel');
+  if (hdr) hdr.textContent = TYPE_LABELS_JS[type] || type;
+}
+
+const typeRadios = document.querySelectorAll('input[name="type"]');
+typeRadios.forEach(r => r.addEventListener('change', () => applyTypeVisibility(r.value)));
+
+// Initialise on load
+const checkedType = document.querySelector('input[name="type"]:checked');
+if (checkedType) applyTypeVisibility(checkedType.value);
+</script>

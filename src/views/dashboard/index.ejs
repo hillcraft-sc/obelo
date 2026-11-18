@@ -1,0 +1,328 @@
+<% const dashEnabled = new Set(dashWidgets.filter(w => w.enabled).map(w => w.key));
+   const dashOrder   = dashWidgets.map(w => w.key); %>
+
+<div class="max-w-3xl mx-auto py-6 px-4 space-y-5">
+
+  <!-- ── Welcome (new accounts only; hides once anything is added) ───────── -->
+  <% if (isNewAccount) { %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+      <div>
+        <h2 class="text-base font-semibold text-white">Welcome to Obelo</h2>
+        <p class="text-sm text-gray-400 mt-1">Your tasks, notes, routines and reminders all live here. A good place to start:</p>
+      </div>
+      <ol class="space-y-2 text-sm">
+        <li><a href="/tasks/new" class="text-indigo-400 hover:text-indigo-300">Add a task</a> <span class="text-gray-500">for something you need to do.</span></li>
+        <li><a href="/notes" class="text-indigo-400 hover:text-indigo-300">Write a note</a> <span class="text-gray-500">for anything you want to keep.</span></li>
+        <li><a href="/routines/new" class="text-indigo-400 hover:text-indigo-300">Start a routine</a> <span class="text-gray-500">for a habit you want to track.</span></li>
+        <li><a href="/help" class="text-indigo-400 hover:text-indigo-300">Read the Help</a> <span class="text-gray-500">for a tour of every feature.</span></li>
+      </ol>
+    </div>
+  <% } %>
+
+  <!-- ── Header ───────────────────────────────────────────────────────────── -->
+  <div class="flex items-baseline justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white" id="dash-date"></h1>
+      <p class="text-gray-500 text-sm mt-0.5" id="dash-time"></p>
+    </div>
+    <% if (slippingCount > 0) { %>
+      <a href="/tasks?view=slipping"
+         class="text-xs text-amber-400 hover:text-amber-300 border border-amber-900 rounded-lg px-3 py-1.5 transition-colors">
+        <%= slippingCount %> task<%= slippingCount === 1 ? '' : 's' %> slipping
+      </a>
+    <% } %>
+  </div>
+
+  <!-- ── My Focus ─────────────────────────────────────────────────────────── -->
+  <% if (dashEnabled.has('focus')) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">My Focus</h2>
+      <a href="/tasks?view=all" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">All tasks →</a>
+    </div>
+
+    <% if (focusTasks.length === 0) { %>
+      <div class="px-5 py-4 text-sm text-gray-600 italic">
+        No tasks set to "Today" status.
+        <a href="/tasks" class="text-indigo-400 hover:text-indigo-300 not-italic">Set some focus tasks →</a>
+      </div>
+    <% } else { %>
+      <div>
+        <% focusTasks.forEach(task => { %>
+          <div id="dash-task-<%= task.id %>"
+               class="flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 last:border-0 group">
+            <button hx-post="/tasks/<%= task.id %>/complete"
+                    hx-target="#dash-task-<%= task.id %>" hx-swap="outerHTML"
+                    class="w-5 h-5 rounded-full border-2 border-indigo-500 hover:bg-green-500/20 hover:border-green-500 shrink-0 transition-colors"
+                    title="Mark complete"></button>
+            <div class="w-2.5 h-2.5 rounded-full shrink-0 <%= PRIORITY_DOT[task.priority] || PRIORITY_DOT.none %>"></div>
+            <a href="/tasks/<%= task.id %>" class="flex-1 min-w-0 text-sm font-medium text-gray-100 hover:text-white truncate">
+              <%= task.title %>
+            </a>
+            <% if (task.dueTime) { %>
+              <span class="text-xs text-gray-600 shrink-0"><%= fmtTime(task.dueTime) %></span>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+  <% } %>
+
+  <!-- ── Calendar Strip ──────────────────────────────────────────────────── -->
+  <% if (dashEnabled.has('calendar')) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Today's Events</h2>
+      <a href="/calendar" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Calendar →</a>
+    </div>
+    <% if (calendarEvents.length === 0) { %>
+      <div class="px-5 py-4 text-sm text-gray-600 italic">No events today.</div>
+    <% } else { %>
+      <div>
+        <% calendarEvents.forEach(ev => { %>
+          <a href="/calendar/events/<%= ev.id %>"
+             class="flex items-center gap-3 px-5 py-3 border-b border-gray-800 last:border-0 hover:bg-gray-800/30 transition-colors group">
+            <span class="w-2 h-2 rounded-full shrink-0"
+                  style="background-color: <%= ev.source?.color || ev.localCalendar?.color || '#6366f1' %>"></span>
+            <span class="flex-1 min-w-0 text-sm text-gray-200 group-hover:text-white truncate">
+              <%= ev.title %>
+            </span>
+            <span class="text-xs text-gray-500 shrink-0">
+              <% if (ev.allDay) { %>
+                All day
+              <% } else { %>
+                <%= ev.startAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: currentUser.timezone || 'America/New_York', hour12: hour12 }) %>
+              <% } %>
+            </span>
+          </a>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+  <% } %>
+
+  <!-- ── Open Tasks & Reminders ───────────────────────────────────────────── -->
+  <% if (dashEnabled.has('due_items') && combined.length > 0) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        Due Today &amp; Overdue
+        <span class="ml-2 px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-400 text-[10px] font-normal normal-case">
+          <%= combined.length %>
+        </span>
+      </h2>
+      <div class="flex gap-3 text-xs text-gray-600">
+        <a href="/tasks?view=today" class="hover:text-gray-400 transition-colors">Tasks →</a>
+        <a href="/reminders?view=overdue" class="hover:text-gray-400 transition-colors">Reminders →</a>
+      </div>
+    </div>
+
+    <div>
+      <% combined.forEach(({ item, type, overdue, isToday }) => { %>
+        <% if (type === 'task') { %>
+          <div id="dash-task-<%= item.id %>"
+               class="flex items-center gap-3 px-5 py-3 border-b border-gray-800 last:border-0 group">
+            <button hx-post="/tasks/<%= item.id %>/complete"
+                    hx-target="#dash-task-<%= item.id %>" hx-swap="outerHTML"
+                    class="w-5 h-5 rounded-full border-2 <%= overdue ? 'border-red-500' : 'border-gray-600' %> hover:bg-green-500/20 hover:border-green-500 shrink-0 transition-colors"
+                    title="Mark complete"></button>
+            <div class="w-2 h-2 rounded-full shrink-0 <%= PRIORITY_DOT[item.priority] || PRIORITY_DOT.none %>"></div>
+            <a href="/tasks/<%= item.id %>" class="flex-1 min-w-0 text-sm text-gray-200 hover:text-white truncate">
+              <%= item.title %>
+            </a>
+            <% if (item.dueDate || item.dueTime) { %>
+              <span class="text-xs shrink-0 <%= overdue ? 'text-red-400' : isToday ? 'text-green-400' : 'text-gray-500' %>">
+                <%= item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '' %>
+                <% if (item.dueTime) { %><%= item.dueDate ? ' · ' : '' %><%= fmtTime(item.dueTime) %><% } %>
+              </span>
+            <% } %>
+          </div>
+
+        <% } else { /* reminder */ %>
+          <div id="dash-rem-<%= item.id %>"
+               class="flex items-center gap-3 px-5 py-3 border-b border-gray-800 last:border-0 group">
+            <button hx-post="/reminders/<%= item.id %>/complete"
+                    hx-target="#dash-rem-<%= item.id %>" hx-swap="outerHTML"
+                    class="w-5 h-5 rounded-full border-2 <%= overdue ? 'border-red-500' : 'border-gray-600' %> hover:bg-green-500/20 hover:border-green-500 shrink-0 transition-colors"
+                    title="Mark complete"></button>
+            <!-- Bell icon to distinguish reminders from tasks -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                 class="w-3.5 h-3.5 shrink-0 <%= overdue ? 'text-red-500' : 'text-gray-600' %>">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+            </svg>
+            <a href="/reminders/<%= item.id %>" class="flex-1 min-w-0 text-sm text-gray-200 hover:text-white truncate">
+              <%= item.title %>
+            </a>
+            <% if (item.dueDate || item.dueTime) { %>
+              <span class="text-xs shrink-0 <%= overdue ? 'text-red-400' : isToday ? 'text-green-400' : 'text-gray-500' %>">
+                <%= item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '' %>
+                <% if (item.dueTime) { %><%= item.dueDate ? ' · ' : '' %><%= fmtTime(item.dueTime) %><% } %>
+              </span>
+            <% } %>
+            <!-- Snooze -->
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button hx-post="/reminders/<%= item.id %>/snooze"
+                      hx-vals='{"duration":"1hour"}'
+                      hx-target="#dash-rem-<%= item.id %>" hx-swap="outerHTML"
+                      class="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-600 hover:text-amber-300 border border-gray-700 transition-colors">
+                +1h
+              </button>
+              <button hx-post="/reminders/<%= item.id %>/snooze"
+                      hx-vals='{"duration":"tomorrow"}'
+                      hx-target="#dash-rem-<%= item.id %>" hx-swap="outerHTML"
+                      class="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-600 hover:text-amber-300 border border-gray-700 transition-colors">
+                tmrw
+              </button>
+            </div>
+          </div>
+        <% } %>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ── Routines ──────────────────────────────────────────────────────────── -->
+  <% if (dashEnabled.has('routines') && dueRoutines.length > 0) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800 flex items-center justify-between">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        Routines
+        <span class="ml-2 text-[10px] font-normal normal-case text-gray-600">
+          <%= dueRoutines.filter(r => completedTodayIds.has(r.id)).length %>/<%= dueRoutines.length %> done
+        </span>
+      </h2>
+      <a href="/routines" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">All routines →</a>
+    </div>
+
+    <% TIME_OF_DAY.forEach(tod => { %>
+      <% if (routineGroups[tod].length > 0) { %>
+        <% if (tod !== 'anytime' || TIME_OF_DAY.filter(t => t !== 'anytime').some(t => routineGroups[t].length > 0)) { %>
+          <div class="px-5 py-1.5 bg-gray-800/30 border-b border-gray-800">
+            <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-600"><%= TIME_LABELS[tod] %></span>
+          </div>
+        <% } %>
+        <% routineGroups[tod].forEach(routine => { %>
+          <%- include('../routines/_row', {
+            routine,
+            completedToday: completedTodayIds.has(routine.id),
+            isDueToday: true,
+            FREQ_LABELS,
+          }) %>
+        <% }); %>
+      <% } %>
+    <% }); %>
+  </div>
+  <% } %>
+
+  <!-- ── Resurfacing ───────────────────────────────────────────────────────── -->
+  <% if (dashEnabled.has('resurfaced') && resurfaceNote) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Resurfacing</h2>
+    </div>
+    <a href="/notes/<%= resurfaceNote.id %>" class="block px-5 py-4 hover:bg-gray-800/30 transition-colors group">
+      <div class="text-xs text-gray-600 mb-1.5">
+        From <%= new Date(resurfaceNote.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
+        <% if (resurfaceNote.type && resurfaceNote.type !== 'note') { %>
+          · <span class="capitalize"><%= resurfaceNote.type %></span>
+        <% } %>
+      </div>
+      <% if (resurfaceNote.title) { %>
+        <div class="text-sm font-medium text-gray-200 group-hover:text-white mb-1"><%= resurfaceNote.title %></div>
+      <% } %>
+      <div class="text-sm text-gray-500 line-clamp-3 leading-relaxed">
+        <%= resurfaceNote.content?.slice(0, 200) %><% if ((resurfaceNote.content?.length || 0) > 200) { %>…<% } %>
+      </div>
+    </a>
+  </div>
+  <% } %>
+
+  <!-- ── Items Needing Review ──────────────────────────────────────────────── -->
+  <% if (dashEnabled.has('review') && (reviewItems.length > 0 || slippingNotes.length > 0)) { %>
+  <div class="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+    <div class="px-5 pt-4 pb-3 border-b border-gray-800">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+        Needs Review
+        <span class="ml-2 px-1.5 py-0.5 rounded-full bg-amber-900/50 text-amber-400 text-[10px] font-normal normal-case">
+          <%= reviewItems.length + slippingNotes.length %>
+        </span>
+      </h2>
+    </div>
+    <% reviewItems.forEach(note => { %>
+      <div id="review-note-<%= note.id %>"
+           class="flex items-center gap-3 px-5 py-3 border-b border-gray-800 last:border-0 group">
+        <a href="/notes/<%= note.id %>" class="flex-1 min-w-0 text-sm text-gray-300 hover:text-white truncate">
+          <%= note.title || note.content?.slice(0, 60) || 'Untitled' %>
+        </a>
+        <% if (note.reviewDate) { %>
+          <span class="text-xs text-gray-600 shrink-0">
+            <%= new Date(note.reviewDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %>
+          </span>
+        <% } %>
+        <button hx-post="/notes/<%= note.id %>/flag?from=dashboard"
+                hx-target="#review-note-<%= note.id %>" hx-swap="outerHTML"
+                class="opacity-0 group-hover:opacity-100 shrink-0 text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-500 hover:text-green-400 border border-gray-700 transition-all"
+                title="Mark reviewed">
+          ✓ Done
+        </button>
+      </div>
+    <% }); %>
+    <% slippingNotes.forEach(note => {
+         const daysAgo = Math.floor((Date.now() - new Date(note.updatedAt)) / (1000 * 60 * 60 * 24));
+    %>
+      <div class="flex items-center gap-3 px-5 py-3 border-b border-gray-800 last:border-0">
+        <a href="/notes/<%= note.id %>" class="flex-1 min-w-0 text-sm text-gray-400 hover:text-white truncate">
+          <%= note.title || note.content?.slice(0, 60) || 'Untitled' %>
+        </a>
+        <span class="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-950 text-amber-500 border border-amber-900">
+          stale <%= daysAgo %>d
+        </span>
+        <a href="/notes/<%= note.id %>" class="shrink-0 text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-500 hover:text-white border border-gray-700 transition-colors">
+          Open →
+        </a>
+      </div>
+    <% }); %>
+  </div>
+  <% } %>
+
+  <!-- ── Quick Capture ─────────────────────────────────────────────────────── -->
+  <div class="rounded-xl bg-gray-900 border border-gray-800 p-5">
+    <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Capture</h2>
+    <form action="/capture" method="GET" class="flex gap-2">
+      <input type="text" name="q"
+             placeholder="Capture a thought, task, or note…"
+             class="flex-1 px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700
+                    text-gray-100 placeholder-gray-600 text-sm
+                    focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      <button type="submit"
+              class="px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+        Capture
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+  function updateClock() {
+    const now = new Date();
+    const dateEl = document.getElementById('dash-date');
+    const timeEl = document.getElementById('dash-time');
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: <%= hour12 %> });
+  }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // The page is rendered for one day. When the day changes while it stays open (or it comes back
+  // from the background, or from the back/forward cache), reload it, so routines ticked yesterday
+  // don't show as done today (issue #8).
+  const LOADED_DAY = new Date().toDateString();
+  function reloadOnNewDay() {
+    if (document.visibilityState === 'visible' && new Date().toDateString() !== LOADED_DAY) location.reload();
+  }
+  setInterval(reloadOnNewDay, 30000);
+  document.addEventListener('visibilitychange', reloadOnNewDay);
+  window.addEventListener('pageshow', reloadOnNewDay);
+</script>

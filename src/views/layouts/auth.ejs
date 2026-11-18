@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+  <script src="/js/csrf.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Obelo</title>
+  <% if (locals.googleSiteVerification) { %><meta name="google-site-verification" content="<%= googleSiteVerification %>" /><% } %>
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" type="image/png" href="/icons/obelo-192.png" />
+  <link rel="apple-touch-icon" href="/icons/obelo-180.png" />
+  <link rel="stylesheet" href="/css/tailwind.css" />
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex items-center justify-center antialiased">
+  <% if (locals.needsHttps) { %>
+    <div class="fixed top-0 inset-x-0 px-4 py-3 bg-amber-950 border-b border-amber-800 text-amber-200 text-sm text-center">
+      This address isn't using HTTPS, so signing in can't work here. Open Obelo through your HTTPS address.
+    </div>
+  <% } %>
+  <%- body %>
+</body>
+</html>

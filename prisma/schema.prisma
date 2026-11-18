@@ -1,0 +1,433 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  email        String?  @unique
+  role         String   @default("user")
+  displayName  String   @map("display_name")
+  oidcSub      String?  @unique @map("oidc_sub")
+  passwordHash String?  @map("password_hash")
+  timezone     String   @default("America/New_York")
+  preferences  Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  modules              UserModule[]
+  apiTokens            ApiToken[]
+  passwordTokens       PasswordToken[]
+  folders              Folder[]
+  notes                Note[]
+  noteThoughts         NoteThought[]
+  tasks                Task[]
+  reminders            Reminder[]
+  routines              Routine[]
+  routineCompletions    RoutineCompletion[]
+  routineStreakHistory  RoutineStreakHistory[]
+  calendarSources      CalendarSource[]
+  calendarEvents       CalendarEvent[]
+  captureDrafts        CaptureDraft[]
+  notificationPrefs    NotificationPref[]
+  lists                List[]
+  listShares           ListShare[]
+  bookmarks            Bookmark[]
+  localCalendars       LocalCalendar[]
+  localCalendarMembers LocalCalendarMember[]
+
+  @@map("users")
+}
+
+// One-time link for choosing a password: "setup" for a new account, "reset" for an existing one.
+// Only the SHA-256 of the token is stored.
+model PasswordToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  codeHash  String?   @map("code_hash")
+  purpose   String
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_tokens")
+}
+
+model UserModule {
+  id        Int     @id @default(autoincrement())
+  userId    Int     @map("user_id")
+  moduleKey String  @map("module_key")
+  enabled   Boolean @default(true)
+  position  Int?    @map("position")
+  settings  Json    @default("{}")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, moduleKey])
+  @@map("user_modules")
+}
+
+model ApiToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  tokenHash String    @map("token_hash")
+  label     String
+  lastUsed  DateTime? @map("last_used")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_tokens")
+}
+
+model Note {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  type             String    @default("note")
+  title            String
+  content          String?
+  source           String?
+  author           String?
+  tags             String[]  @default([])
+  folderId         Int?      @map("folder_id")
+  pinned           Boolean   @default(false)
+  private          Boolean   @default(false)
+  flaggedForReview Boolean   @default(false) @map("flagged_for_review")
+  reviewDate       DateTime? @map("review_date")
+  locked           Boolean   @default(false)
+  lockedContent    String?   @map("locked_content")
+  lockSalt         String?   @map("lock_salt")
+  hasDrawing       Boolean   @default(false) @map("has_drawing")
+  drawingData      String?   @map("drawing_data")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  attachments NoteAttachment[]
+  thoughts    NoteThought[]
+
+  @@map("notes")
+}
+
+model NoteAttachment {
+  id        Int      @id @default(autoincrement())
+  noteId    Int      @map("note_id")
+  filePath  String   @map("file_path")
+  mimeType  String   @map("mime_type")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@map("note_attachments")
+}
+
+model NoteThought {
+  id        Int      @id @default(autoincrement())
+  noteId    Int      @map("note_id")
+  userId    Int      @map("user_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("note_thoughts")
+}
+
+model Task {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  title       String
+  notes       String?
+  status      String    @default("inbox")
+  priority    String    @default("none")
+  dueDate     DateTime? @map("due_date")
+  dueTime     String?   @map("due_time")
+  tags        String[]  @default([])
+  recurring   Boolean   @default(false)
+  recurRule   String?   @map("recur_rule")
+  parentId    Int?      @map("parent_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  completedAt DateTime? @map("completed_at")
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Task?  @relation("TaskSubtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks Task[] @relation("TaskSubtasks")
+
+  @@map("tasks")
+}
+
+model Reminder {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  title       String
+  notes       String?
+  dueDate     DateTime? @map("due_date")
+  dueTime     String?   @map("due_time")
+  reminderAt  DateTime? @map("reminder_at")
+  priority    String    @default("none")
+  tags        String[]  @default([])
+  completed   Boolean   @default(false)
+  recurring   Boolean   @default(false)
+  recurRule   String?   @map("recur_rule")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+model Routine {
+  id            Int       @id @default(autoincrement())
+  userId        Int       @map("user_id")
+  title         String
+  description   String?
+  timeOfDay     String    @default("anytime") @map("time_of_day")
+  specificTime  String?   @map("specific_time")
+  frequency     String    @default("daily")
+  scheduleDays  String[]  @default([]) @map("schedule_days")
+  durationDays  Int?      @map("duration_days")
+  startDate     DateTime? @map("start_date")
+  streakCurrent Int       @default(0) @map("streak_current")
+  streakBest    Int       @default(0) @map("streak_best")
+  tags          String[]  @default([])
+  notify        Boolean   @default(false)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  completions   RoutineCompletion[]
+  streakHistory RoutineStreakHistory[]
+
+  @@map("routines")
+}
+
+model RoutineCompletion {
+  id            Int       @id @default(autoincrement())
+  routineId     Int       @map("routine_id")
+  userId        Int       @map("user_id")
+  completedDate DateTime  @map("completed_date") @db.Date
+  completedAt   DateTime? @map("completed_at")
+
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([routineId, completedDate])
+  @@map("routine_completions")
+}
+
+model RoutineStreakHistory {
+  id        Int      @id @default(autoincrement())
+  routineId Int      @map("routine_id")
+  userId    Int      @map("user_id")
+  length    Int
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  isActive  Boolean  @default(false) @map("is_active")
+
+  routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([routineId, startDate])
+  @@map("routine_streak_history")
+}
+
+model CalendarSource {
+  id               Int       @id @default(autoincrement())
+  userId           Int       @map("user_id")
+  type             String
+  name             String
+  color            String    @default("#6366f1")
+  credentials      Json?
+  active           Boolean   @default(true)
+  isFamilyCalendar Boolean   @default(false) @map("is_family_calendar")
+  lastSynced       DateTime? @map("last_synced")
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events CalendarEvent[]
+
+  @@map("calendar_sources")
+}
+
+model CalendarEvent {
+  id                 Int       @id @default(autoincrement())
+  sourceId           Int?      @map("source_id")
+  localCalendarId    Int?      @map("local_calendar_id")
+  userId             Int       @map("user_id")
+  externalId         String?   @map("external_id")
+  title              String
+  calendarName       String?   @map("calendar_name")
+  startAt            DateTime  @map("start_at")
+  endAt              DateTime  @map("end_at")
+  allDay             Boolean   @default(false) @map("all_day")
+  location           String?
+  description        String?
+  url                String?
+  createdInObelo Boolean   @default(false) @map("created_in_vibetrack")
+  syncedAt           DateTime? @map("synced_at")
+
+  source        CalendarSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  localCalendar LocalCalendar?  @relation(fields: [localCalendarId], references: [id], onDelete: SetNull)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_events")
+}
+
+model LocalCalendar {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  name      String
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  members LocalCalendarMember[]
+  events  CalendarEvent[]
+
+  @@map("local_calendars")
+}
+
+model LocalCalendarMember {
+  id         Int      @id @default(autoincrement())
+  calendarId Int      @map("calendar_id")
+  userId     Int      @map("user_id")
+  canEdit    Boolean  @default(true) @map("can_edit")
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  calendar LocalCalendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([calendarId, userId])
+  @@map("local_calendar_members")
+}
+
+model CaptureDraft {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  rawInput     String   @map("raw_input")
+  aiSuggestion Json?    @map("ai_suggestion")
+  status       String   @default("pending")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("capture_drafts")
+}
+
+model NotificationPref {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @map("user_id")
+  type     String
+  enabled  Boolean @default(true)
+  sendTime String? @map("send_time")
+  channels Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("notification_prefs")
+}
+
+model List {
+  id        Int         @id @default(autoincrement())
+  userId    Int         @map("user_id")
+  title     String
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items  ListItem[]
+  shares ListShare[]
+
+  @@map("lists")
+}
+
+model ListShare {
+  id        Int      @id @default(autoincrement())
+  listId    Int      @map("list_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@map("list_shares")
+}
+
+model ListItem {
+  id        Int      @id @default(autoincrement())
+  listId    Int      @map("list_id")
+  text      String
+  checked   Boolean  @default(false)
+  position  Int      @default(0) @map("position")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@map("list_items")
+}
+
+model Bookmark {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  url         String
+  title       String?
+  description String?
+  tags        String[] @default([])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bookmarks")
+}
+
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("system_settings")
+}
+
+model AppLog {
+  id        Int      @id @default(autoincrement())
+  level     String
+  category  String
+  message   String
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([level])
+  @@index([category])
+  @@index([createdAt])
+  @@map("app_logs")
+}
+
+model Folder {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  name      String
+  parentId  Int?     @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderTree")
+  notes    Note[]
+
+  @@map("folders")
+}

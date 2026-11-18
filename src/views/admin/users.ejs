@@ -1,0 +1,154 @@
+<div class="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <%- include('../partials/page-heading', { heading: 'Users', description: users.length + ' total' }) %>
+    <a href="/admin" class="text-xs text-indigo-400 hover:text-indigo-300">← Dashboard</a>
+  </div>
+
+  <% if (success) { %>
+    <div class="rounded-xl bg-emerald-950 border border-emerald-800 px-4 py-3 text-sm text-emerald-300"><%= success %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <% if (passwordLink) { %>
+    <div class="rounded-xl bg-indigo-950 border border-indigo-800 px-4 py-3 text-sm text-indigo-200 space-y-2">
+      <p>Give <%= passwordLink.name %> a way to choose their own password. Either one works once and expires in 24 hours; using one cancels the other. This is shown only now.</p>
+      <p class="text-xs text-indigo-300">In the app, they tap "Have a setup code?" and enter their username <span class="font-mono"><%= passwordLink.username %></span> and this code:</p>
+      <p class="text-2xl font-mono font-semibold tracking-widest text-white"><%= passwordLink.code %></p>
+      <p class="text-xs text-indigo-300">Or on the web, they open this link:</p>
+      <input type="text" readonly value="<%= passwordLink.url %>"
+             class="w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-gray-100 text-xs font-mono">
+    </div>
+  <% } %>
+
+  <!-- Create user form -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-300 mb-4">Create User</h2>
+    <form action="/admin/users/create" method="POST" class="space-y-4">
+      <p class="text-xs text-gray-500">
+        You get a one-time setup code and link to give them so they can choose a password. Admins never see or set anyone's password.<% if (oidcConfigured) { %> With SSO, add their email: their first SSO sign-in links to this account by email.<% } %>
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Username <span class="text-red-500">*</span></label>
+          <input type="text" name="username" required autocomplete="off"
+                 pattern="[a-z0-9_-]+"
+                 title="Letters, numbers, underscores, hyphens only"
+                 class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                 placeholder="jsmith" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Display name</label>
+          <input type="text" name="displayName" autocomplete="off"
+                 class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                 placeholder="Jane Smith" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">
+            Email<% if (oidcConfigured) { %> <span class="text-gray-600">(needed for SSO)</span><% } else { %> <span class="text-gray-600">(optional)</span><% } %>
+          </label>
+          <input type="email" name="email" autocomplete="off"
+                 class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                 placeholder="jane@example.com" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Timezone</label>
+          <input type="text" name="timezone" value="America/New_York" autocomplete="off"
+                 class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Role</label>
+          <select name="role"
+                  class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <button type="submit"
+                class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+          Create user
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- User table -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <div class="divide-y divide-gray-800">
+      <% users.forEach(u => { %>
+        <div class="px-5 py-4">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full shrink-0 mt-0.5">
+              <% if (gravatars[u.id]) { %>
+                <img src="<%= gravatars[u.id] %>"
+                     class="w-8 h-8 rounded-full object-cover bg-indigo-700"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+                     alt="<%= u.displayName %>" />
+                <div class="w-8 h-8 rounded-full bg-indigo-700 items-center justify-center text-sm font-semibold text-white" style="display:none">
+                  <%= u.displayName.charAt(0).toUpperCase() %>
+                </div>
+              <% } else { %>
+                <div class="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center text-sm font-semibold text-white">
+                  <%= u.displayName.charAt(0).toUpperCase() %>
+                </div>
+              <% } %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="text-sm font-medium text-gray-100"><%= u.displayName %></p>
+                <% if (u.role === 'admin') { %>
+                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400">admin</span>
+                <% } %>
+                <span class="text-xs text-gray-500">@<%= u.username %></span>
+                <% if (!u.ssoLinked && !u.hasPassword && u.email && oidcConfigured) { %>
+                  <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400"
+                        title="Links to this account on their first SSO sign-in with the email below">SSO · awaiting first sign-in</span>
+                <% } %>
+              </div>
+              <% if (u.email) { %>
+                <p class="text-xs text-gray-500 mt-0.5"><%= u.email %></p>
+              <% } %>
+              <p class="text-xs text-gray-600 mt-1">
+                <span class="font-mono text-gray-700">id:<%= u.id %></span>
+                · Joined <%= new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                · Last login: <%= u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'never' %>
+                · <%= u._count.notes %> notes · <%= u._count.tasks %> tasks
+              </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- One-time password link -->
+              <form action="/admin/users/<%= u.id %>/password-link" method="POST">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-gray-700 text-gray-400 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+                  <%= u.hasPassword ? 'Reset password' : 'Password link' %>
+                </button>
+              </form>
+              <!-- Toggle admin -->
+              <form action="/admin/users/<%= u.id %>/toggle-admin" method="POST">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-gray-700 text-gray-400 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+                  <%= u.role === 'admin' ? 'Demote' : 'Make admin' %>
+                </button>
+              </form>
+              <!-- Delete -->
+              <form action="/admin/users/<%= u.id %>/delete" method="POST"
+                    data-confirm="Permanently delete <%= u.displayName %> and all their data? This cannot be undone."
+                    onsubmit="return confirm(this.dataset.confirm)">
+                <button type="submit"
+                        class="text-xs px-2.5 py-1 rounded-lg border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-400 transition-colors">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+
+</div>

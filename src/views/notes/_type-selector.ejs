@@ -1,0 +1,18 @@
+<% const formAttr = (typeof formId !== 'undefined' && formId) ? ' form="' + formId + '"' : ''; %>
+    <!-- Type selector -->
+    <div>
+      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Type</label>
+      <div class="flex gap-1 p-1 bg-gray-800 rounded-lg w-fit">
+        <% [['note', 'Note'], ['journal', 'Journal'], ['quote', 'Quote']].forEach(([val, label]) => { %>
+          <label class="relative cursor-pointer">
+            <input type="radio" name="type"<%- formAttr %> value="<%= val %>"
+                   <%= (note && note.type === val) || (!note && val === 'note') ? 'checked' : '' %>
+                   class="sr-only peer" />
+            <span class="block px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+                         text-gray-400 peer-checked:bg-gray-700 peer-checked:text-gray-100">
+              <%= label %>
+            </span>
+          </label>
+        <% }); %>
+      </div>
+    </div>

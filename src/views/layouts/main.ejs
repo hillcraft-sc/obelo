@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en" class="<%= _isDark ? 'dark' : '' %>" data-theme="<%= _theme %>" data-status-colors="<%= typeof _statusColors !== 'undefined' ? _statusColors : 'catppuccin' %>">
+<head>
+  <meta charset="UTF-8" />
+  <% if (locals.googleSiteVerification) { %><meta name="google-site-verification" content="<%= googleSiteVerification %>" /><% } %>
+  <meta name="csrf-token" content="<%= csrfToken %>" />
+  <script src="/js/csrf.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title + ' — Obelo' : 'Obelo' %></title>
+  <script>
+    // An installed web app already puts "Obelo - " in front of the window title; don't repeat it
+    if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+      document.title = document.title.replace(/ — Obelo$/, '');
+    }
+  </script>
+  <meta name="theme-color" content="<%=
+    _theme==='midnight' ? '#0a0b12' :
+    _theme==='forest'   ? '#0d1a0f' :
+    _theme==='mocha'    ? '#1c1410' :
+    _theme==='sunset'   ? '#1a0f0f' :
+    _theme==='amoled'   ? '#000000' :
+    _theme==='breeze'   ? '#dce9f7' :
+    _theme==='ctp-latte' ? '#dce0e8' :
+    _theme==='ctp-frappe' ? '#292c3c' :
+    _theme==='ctp-macchiato' ? '#1e2030' :
+    _theme==='ctp-mocha' ? '#181825' :
+    _isDark ? '#0f1117' : '#f8fafc'
+  %>" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="<%= _isDark ? 'black-translucent' : 'default' %>" />
+  <meta name="apple-mobile-web-app-title" content="Obelo" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" type="image/png" href="/icons/obelo-192.png" />
+  <link rel="apple-touch-icon" href="/icons/obelo-180.png" />
+  <link rel="stylesheet" href="/css/tailwind.css" />
+  <script src="/js/htmx.min.js" defer></script>
+  <style>
+    [x-cloak] { display: none; }
+    .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+    .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       THEME SYSTEM — CSS custom properties per theme, one shared
+       override block maps Tailwind classes to those variables.
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ── Dark (default) ─────────────────────────────────────────────── */
+    html {
+      color-scheme: dark;
+      --bg-pg: #0f1117;  --bg-sf: #1a1d27;  --bg-el: #252836;
+      --bg-h1: #2d3246;  --bg-h2: #353a56;  --bg-h3: #3e4366;
+      --bg-el-r: 37;  --bg-el-g: 40;  --bg-el-b: 54;
+      --bd-1: #2e3349;  --bd-2: #3a3f5c;  --bd-3: #474d6e;
+      --tx-m: #6a7292;  --tx-x: #6a7292;  --tx-xx: #6a7292;
+      --ph: #555d7c;  --scrollbar: #3a3f5c;
+      --ac: #2563eb;  --ac-h: #3b7fff;  --ac-d: #1d4ed8;  --ac-sf: #0c1852;
+      --ac-t4: #93bbff;  --ac-t3: #bdd3ff;  --ac-t5: #5b99ff;  --ac-t6: #2563eb;
+      --ac-bd: #2563eb;  --ac-bd9: #1a3a8a;
+      --ac-r: 37;  --ac-g: 99;  --ac-b: 235;
+    }
+
+    /* ── Midnight ────────────────────────────────────────────────────── */
+    html[data-theme="midnight"] {
+      --bg-pg: #0a0b12;  --bg-sf: #13151f;  --bg-el: #1d2030;
+      --bg-h1: #252740;  --bg-h2: #2d2f50;  --bg-h3: #363960;
+      --bg-el-r: 29;  --bg-el-g: 32;  --bg-el-b: 48;
+      --bd-1: #272a3e;  --bd-2: #333652;  --bd-3: #404468;
+      --tx-m: #676a88;  --tx-x: #676a88;  --tx-xx: #676a88;
+      --ph: #4d5070;  --scrollbar: #333652;
+      --ac: #7c3aed;  --ac-h: #9555ff;  --ac-d: #6d28d9;  --ac-sf: #2d1a5c;
+      --ac-t4: #c4a8ff;  --ac-t3: #dac8ff;  --ac-t5: #a980ff;  --ac-t6: #7c3aed;
+      --ac-bd: #7c3aed;  --ac-bd9: #4c1d95;
+      --ac-r: 124;  --ac-g: 58;  --ac-b: 237;
+    }
+
+    /* ── Mocha ───────────────────────────────────────────────────────── */
+    html[data-theme="mocha"] {
+      --bg-pg: #1c1410;  --bg-sf: #261c15;  --bg-el: #33241b;
+      --bg-h1: #3c2c22;  --bg-h2: #453329;  --bg-h3: #4e3b30;
+      --bg-el-r: 51;  --bg-el-g: 36;  --bg-el-b: 27;
+      --bd-1: #3d2b1f;  --bd-2: #4a3427;  --bd-3: #5a3f30;
+      --tx-m: #8c6b45;  --tx-x: #8c6b45;  --tx-xx: #8c6b45;
+      --ph: #6a4f33;  --scrollbar: #4a3427;
+      --ac: #b45309;  --ac-h: #d06010;  --ac-d: #92400e;  --ac-sf: #451a03;
+      --ac-t4: #f5b86e;  --ac-t3: #fcd28e;  --ac-t5: #e89040;  --ac-t6: #b45309;
+      --ac-bd: #b45309;  --ac-bd9: #78350f;
+      --ac-r: 180;  --ac-g: 83;  --ac-b: 9;
+    }
+
+    /* ── Forest ──────────────────────────────────────────────────────── */
+    html[data-theme="forest"] {
+      --bg-pg: #0d1a0f;  --bg-sf: #162419;  --bg-el: #1f3024;
+      --bg-h1: #27382c;  --bg-h2: #2f4034;  --bg-h3: #37493c;
+      --bg-el-r: 31;  --bg-el-g: 48;  --bg-el-b: 36;
+      --bd-1: #28402d;  --bd-2: #334e38;  --bd-3: #3f5e45;
+      --tx-m: #5e8062;  --tx-x: #5e8062;  --tx-xx: #5e8062;
+      --ph: #476350;  --scrollbar: #334e38;
+      --ac: #15803d;  --ac-h: #1a9e4c;  --ac-d: #166534;  --ac-sf: #052e16;
+      --ac-t4: #6dd98a;  --ac-t3: #9de8b0;  --ac-t5: #3dc46a;  --ac-t6: #15803d;
+      --ac-bd: #15803d;  --ac-bd9: #14532d;
+      --ac-r: 21;  --ac-g: 128;  --ac-b: 61;
+    }
+
+    /* ── Sunset ──────────────────────────────────────────────────────── */
+    html[data-theme="sunset"] {
+      --bg-pg: #1a0f0f;  --bg-sf: #231616;  --bg-el: #2e1e1e;
+      --bg-h1: #362525;  --bg-h2: #3e2c2c;  --bg-h3: #473333;
+      --bg-el-r: 46;  --bg-el-g: 30;  --bg-el-b: 30;
+      --bd-1: #3e2520;  --bd-2: #4c2f2a;  --bd-3: #5c3935;
+      --tx-m: #8b6457;  --tx-x: #8b6457;  --tx-xx: #8b6457;
+      --ph: #6a4b40;  --scrollbar: #4c2f2a;
+      --ac: #b94528;  --ac-h: #d45530;  --ac-d: #9a3920;  --ac-sf: #3a1008;
+      --ac-t4: #ffb38a;  --ac-t3: #ffd0b0;  --ac-t5: #f07050;  --ac-t6: #b94528;
+      --ac-bd: #b94528;  --ac-bd9: #7f1d0f;
+      --ac-r: 185;  --ac-g: 69;  --ac-b: 40;
+    }
+
+    /* ── AMOLED ─────────────────────────────────────────────────────── */
+    html[data-theme="amoled"] {
+      --bg-pg: #000000;  --bg-sf: #0d0d0d;  --bg-el: #141414;
+      --bg-h1: #1a1a1a;  --bg-h2: #1f1f1f;  --bg-h3: #252525;
+      --bg-el-r: 20;  --bg-el-g: 20;  --bg-el-b: 20;
+      --bd-1: #1c1c1c;  --bd-2: #242424;  --bd-3: #2e2e2e;
+      --tx-m: #666666;  --tx-x: #666666;  --tx-xx: #666666;
+      --ph: #4a4a4a;  --scrollbar: #242424;
+      --ac: #3b82f6;  --ac-h: #60a5fa;  --ac-d: #2563eb;  --ac-sf: #0a1628;
+      --ac-t4: #93c5fd;  --ac-t3: #bfdbfe;  --ac-t5: #60a5fa;  --ac-t6: #3b82f6;
+      --ac-bd: #3b82f6;  --ac-bd9: #1e3a8a;
+      --ac-r: 59;  --ac-g: 130;  --ac-b: 246;
+    }
+
+    /* ── Light ───────────────────────────────────────────────────────── */
+    html:not(.dark) {
+      color-scheme: light;
+      --bg-pg: #f8fafc;  --bg-sf: #ffffff;  --bg-el: #f1f5f9;
+      --bg-h1: #e9eef5;  --bg-h2: #e2e8f0;  --bg-h3: #cbd5e1;
+      --bg-el-r: 241;  --bg-el-g: 245;  --bg-el-b: 249;
+      --bd-1: #e2e8f0;  --bd-2: #cbd5e1;  --bd-3: #94a3b8;
+      --tx-p: #0f172a;   --tx-s1: #1e293b;  --tx-s2: #334155;
+      --tx-s3: #475569;  --tx-s4: #64748b;
+      --tx-m: #64748b;  --tx-x: #6e8296;  --tx-xx: #7a8fa3;
+      --ph: #94a3b8;  --scrollbar: #cbd5e1;
+      --ac: #1e5fcc;  --ac-h: #2563eb;  --ac-d: #1a4fa8;  --ac-sf: #eff6ff;
+      --ac-t4: #1e5fcc;  --ac-t3: #2563eb;  --ac-t5: #1e5fcc;  --ac-t6: #1a4fa8;
+      --ac-bd: #1e5fcc;  --ac-bd9: #1e40af;
+      --ac-r: 30;  --ac-g: 95;  --ac-b: 204;
+    }
+
+    /* ── Breeze ──────────────────────────────────────────────────────── */
+    html:not(.dark)[data-theme="breeze"] {
+      --bg-pg: #dce9f7;  --bg-sf: #eef5fd;  --bg-el: #f5f9ff;
+      --bg-h1: #cfe0f2;  --bg-h2: #c1d6ed;  --bg-h3: #b0c8e6;
+      --bg-el-r: 245;  --bg-el-g: 249;  --bg-el-b: 255;
+      --bd-1: #93c4e8;  --bd-2: #7aaac5;  --bd-3: #5e92b5;
+      --tx-p: #12263f;   --tx-s1: #182e4a;  --tx-s2: #2c4a6a;
+      --tx-s3: #3a5f82;  --tx-s4: #4f7099;
+      --tx-m: #4f7099;  --tx-x: #5e7ea6;  --tx-xx: #6a8bb5;
+      --ph: #6a8bb5;  --scrollbar: #93c4e8;
+      --ac: #0059b3;  --ac-h: #006fd8;  --ac-d: #004a96;  --ac-sf: #e0f0ff;
+      --ac-t4: #0059b3;  --ac-t3: #006fd8;  --ac-t5: #0059b3;  --ac-t6: #004a96;
+      --ac-bd: #0059b3;  --ac-bd9: #1e3a8a;
+      --ac-r: 0;  --ac-g: 89;  --ac-b: 179;
+    }
+
+    /* ── Catppuccin Frappé (catppuccin.com, mauve accent) ── */
+    html[data-theme="ctp-frappe"] {
+      --bg-pg: #292c3c;  --bg-sf: #303446;  --bg-el: #414559;
+      --bg-h1: #494e63;  --bg-h2: #51576d;  --bg-h3: #626880;
+      --bg-el-r: 65;  --bg-el-g: 69;  --bg-el-b: 89;
+      --bd-1: #414559;  --bd-2: #51576d;  --bd-3: #626880;
+      --tx-p: #c6d0f5;   --tx-s1: #c6d0f5;  --tx-s2: #b5bfe2;
+      --tx-s3: #b5bfe2;  --tx-s4: #a5adce;
+      --tx-m: #838ba7;  --tx-x: #838ba7;  --tx-xx: #737994;
+      --ph: #737994;  --scrollbar: #51576d;
+      --ac: #ca9ee6;  --ac-h: #c9abea;  --ac-d: #ab89c6;  --ac-sf: #47445e;
+      --ac-t4: #ca9ee6;  --ac-t3: #c8b2ec;  --ac-t5: #ca9ee6;  --ac-t6: #ca9ee6;
+      --ac-bd: #ca9ee6;  --ac-bd9: #66597e;
+      --ac-r: 202;  --ac-g: 158;  --ac-b: 230;
+      --ac-on: #232634;
+    }
+    /* ── Catppuccin Macchiato (catppuccin.com, mauve accent) ── */
+    html[data-theme="ctp-macchiato"] {
+      --bg-pg: #1e2030;  --bg-sf: #24273a;  --bg-el: #363a4f;
+      --bg-h1: #40445a;  --bg-h2: #494d64;  --bg-h3: #5b6078;
+      --bg-el-r: 54;  --bg-el-g: 58;  --bg-el-b: 79;
+      --bd-1: #363a4f;  --bd-2: #494d64;  --bd-3: #5b6078;
+      --tx-p: #cad3f5;   --tx-s1: #cad3f5;  --tx-s2: #b8c0e0;
+      --tx-s3: #b8c0e0;  --tx-s4: #a5adcb;
+      --tx-m: #8087a2;  --tx-x: #8087a2;  --tx-xx: #6e738d;
+      --ph: #6e738d;  --scrollbar: #494d64;
+      --ac: #c6a0f6;  --ac-h: #c7adf6;  --ac-d: #a688d0;  --ac-sf: #3c3956;
+      --ac-t4: #c6a0f6;  --ac-t3: #c8b4f6;  --ac-t5: #c6a0f6;  --ac-t6: #c6a0f6;
+      --ac-bd: #c6a0f6;  --ac-bd9: #5d517c;
+      --ac-r: 198;  --ac-g: 160;  --ac-b: 246;
+      --ac-on: #181926;
+    }
+    /* ── Catppuccin Mocha (catppuccin.com, mauve accent) ── */
+    html[data-theme="ctp-mocha"] {
+      --bg-pg: #181825;  --bg-sf: #1e1e2e;  --bg-el: #313244;
+      --bg-h1: #3b3d4f;  --bg-h2: #45475a;  --bg-h3: #585b70;
+      --bg-el-r: 49;  --bg-el-g: 50;  --bg-el-b: 68;
+      --bd-1: #313244;  --bd-2: #45475a;  --bd-3: #585b70;
+      --tx-p: #cdd6f4;   --tx-s1: #cdd6f4;  --tx-s2: #bac2de;
+      --tx-s3: #bac2de;  --tx-s4: #a6adc8;
+      --tx-m: #7f849c;  --tx-x: #7f849c;  --tx-xx: #6c7086;
+      --ph: #6c7086;  --scrollbar: #45475a;
+      --ac: #cba6f7;  --ac-h: #ccb2f6;  --ac-d: #a88bcf;  --ac-sf: #38324c;
+      --ac-t4: #cba6f7;  --ac-t3: #ccb9f6;  --ac-t5: #cba6f7;  --ac-t6: #cba6f7;
+      --ac-bd: #cba6f7;  --ac-bd9: #5b4e74;
+      --ac-r: 203;  --ac-g: 166;  --ac-b: 247;
+      --ac-on: #11111b;
+    }
+    /* ── Catppuccin Latte (catppuccin.com, mauve accent) ── */
+    html:not(.dark)[data-theme="ctp-latte"] {
+      --bg-pg: #dce0e8;  --bg-sf: #eff1f5;  --bg-el: #e6e9ef;
+      --bg-h1: #e1e5ec;  --bg-h2: #ccd0da;  --bg-h3: #bcc0cc;
+      --bg-el-r: 230;  --bg-el-g: 233;  --bg-el-b: 239;
+      --bd-1: #ccd0da;  --bd-2: #bcc0cc;  --bd-3: #acb0be;
+      --tx-p: #4c4f69;   --tx-s1: #4c4f69;  --tx-s2: #5c5f77;
+      --tx-s3: #5c5f77;  --tx-s4: #6c6f85;
+      --tx-m: #6c6f85;  --tx-x: #7c7f93;  --tx-xx: #8c8fa1;
+      --ph: #9ca0b0;  --scrollbar: #bcc0cc;
+      --ac: #8839ef;  --ac-h: #7a33d7;  --ac-d: #6d2ebf;  --ac-sf: #e5dff4;
+      --ac-t4: #8839ef;  --ac-t3: #7a33d7;  --ac-t5: #8839ef;  --ac-t6: #6d2ebf;
+      --ac-bd: #8839ef;  --ac-bd9: #bc95f2;
+      --ac-r: 136;  --ac-g: 57;  --ac-b: 239;
+      --ac-on: #ffffff;
+    }
+
+    /* Catppuccin dark flavours also tint the body text (other dark themes keep Tailwind's greys) */
+    html.dark[data-theme^="ctp-"] .text-white    { color: var(--tx-p)  !important; }
+    html.dark[data-theme^="ctp-"] .text-gray-100 { color: var(--tx-s1) !important; }
+    html.dark[data-theme^="ctp-"] .text-gray-200 { color: var(--tx-s2) !important; }
+    html.dark[data-theme^="ctp-"] .text-gray-300 { color: var(--tx-s3) !important; }
+    html.dark[data-theme^="ctp-"] .text-gray-400 { color: var(--tx-s4) !important; }
+    /* Mauve is a light pastel: text on accent fills is dark, as in Catppuccin's own ports */
+    html[data-theme^="ctp-"] :is(.bg-indigo-500, .bg-indigo-600, .bg-indigo-700).text-white,
+    html[data-theme^="ctp-"] :is(.bg-indigo-500, .bg-indigo-600, .bg-indigo-700) .text-white { color: var(--ac-on) !important; }
+
+    /* Status colours (red, amber, green, blue…) in Catppuccin themes, unless the user picked
+       "Tailwind" in Settings → Appearance. Covers the classes the views use; generated from
+       the official palette (red→Red, orange→Peach, amber/yellow→Yellow, green/emerald→Green,
+       blue→Blue, violet→Mauve). */
+    html[data-theme="ctp-latte"]:not([data-status-colors="tailwind"]) {
+      --st-red: #d20f39; --st-red-l: #a3254a; --st-red-t: #ebd1db; --st-red-t2: #e8bbc8; --st-red-b: #e397aa;
+      --st-maroon: #e64553; --st-maroon-l: #b0485b; --st-maroon-t: #eed9de; --st-maroon-t2: #edc8ce; --st-maroon-b: #ebacb4;
+      --st-peach: #fe640b; --st-peach-l: #c05d2c; --st-peach-t: #f1ddd4; --st-peach-t2: #f3cfbd; --st-peach-b: #f5b997;
+      --st-yellow: #df8e1d; --st-yellow-l: #ac7838; --st-yellow-t: #ede3d7; --st-yellow-t2: #ebd9c1; --st-yellow-b: #e9c99f;
+      --st-green: #40a02b; --st-green-l: #448441; --st-green-t: #d6e6d9; --st-green-t2: #c5dec5; --st-green-b: #a9d1a4;
+      --st-blue: #1e66f5; --st-blue-l: #2e5ec4; --st-blue-t: #d2def5; --st-blue-t2: #bdd0f5; --st-blue-b: #9bb9f5;
+      --st-mauve: #8839ef; --st-mauve-l: #7341c0; --st-mauve-t: #e1d7f4; --st-mauve-t2: #d6c5f4; --st-mauve-b: #c6a7f3;
+      --st-on: #ffffff;
+    }
+    html[data-theme="ctp-frappe"]:not([data-status-colors="tailwind"]) {
+      --st-red: #e78284; --st-red-l: #db9dac; --st-red-t: #4a3f4f; --st-red-t2: #5c4755; --st-red-b: #79535f;
+      --st-maroon: #ea999c; --st-maroon-l: #ddacbb; --st-maroon-t: #4a4252; --st-maroon-t2: #5d4c5b; --st-maroon-b: #7a5c68;
+      --st-peach: #ef9f76; --st-peach-l: #e1b0a2; --st-peach-t: #4b434d; --st-peach-t2: #5e4e52; --st-peach-b: #7c5f59;
+      --st-yellow: #e5c890; --st-yellow-l: #dacbb3; --st-yellow-t: #494950; --st-yellow-t2: #5b5858; --st-yellow-b: #786f64;
+      --st-green: #a6d189; --st-green-l: #b1d1af; --st-green-t: #414a4f; --st-green-t2: #4c5a56; --st-green-b: #5f7361;
+      --st-blue: #8caaee; --st-blue-l: #a0b7f0; --st-blue-t: #3d455e; --st-blue-t2: #46506e; --st-blue-b: #556389;
+      --st-mauve: #ca9ee6; --st-mauve-l: #c9b0eb; --st-mauve-t: #46435c; --st-mauve-t2: #554d6c; --st-mauve-b: #6e5e86;
+      --st-on: #232634;
+    }
+    html[data-theme="ctp-macchiato"]:not([data-status-colors="tailwind"]) {
+      --st-red: #ed8796; --st-red-l: #e1a2b7; --st-red-t: #403447; --st-red-t2: #543e50; --st-red-b: #744d5f;
+      --st-maroon: #ee99a0; --st-maroon-l: #e1adbe; --st-maroon-t: #403748; --st-maroon-t2: #544252; --st-maroon-b: #755563;
+      --st-peach: #f5a97f; --st-peach-l: #e6b8a8; --st-peach-t: #413944; --st-peach-t2: #56464b; --st-peach-b: #785b56;
+      --st-yellow: #eed49f; --st-yellow-l: #e1d4bd; --st-yellow-t: #403f48; --st-yellow-t2: #545152; --st-yellow-b: #756c62;
+      --st-green: #a6da95; --st-green-l: #b3d8b7; --st-green-t: #364047; --st-green-t2: #435250; --st-green-b: #586f5e;
+      --st-blue: #8aadf4; --st-blue-l: #a0baf4; --st-blue-t: #323a54; --st-blue-t2: #3c4767; --st-blue-b: #4d5d84;
+      --st-mauve: #c6a0f6; --st-mauve-l: #c7b2f6; --st-mauve-t: #3b3854; --st-mauve-t2: #4b4467; --st-mauve-b: #655785;
+      --st-on: #181926;
+    }
+    html[data-theme="ctp-mocha"]:not([data-status-colors="tailwind"]) {
+      --st-red: #f38ba8; --st-red-l: #e6a5c3; --st-red-t: #3c2d3f; --st-red-t2: #51384b; --st-red-b: #734a5f;
+      --st-maroon: #eba0ac; --st-maroon-l: #e0b3c5; --st-maroon-t: #3b3040; --st-maroon-t2: #4f3d4c; --st-maroon-b: #705260;
+      --st-peach: #fab387; --st-peach-l: #eabfad; --st-peach-t: #3d333a; --st-peach-t2: #534243; --st-peach-b: #765a52;
+      --st-yellow: #f9e2af; --st-yellow-l: #eadec7; --st-yellow-t: #3d3940; --st-yellow-t2: #534d4d; --st-yellow-b: #766c62;
+      --st-green: #a6e3a1; --st-green-l: #b4debe; --st-green-t: #313a3e; --st-green-t2: #3f4d4a; --st-green-b: #546d5c;
+      --st-blue: #89b4fa; --st-blue-l: #a1c0f8; --st-blue-t: #2d334b; --st-blue-t2: #38425f; --st-blue-b: #495a80;
+      --st-mauve: #cba6f7; --st-mauve-l: #ccb7f6; --st-mauve-t: #36314a; --st-mauve-t2: #483f5e; --st-mauve-b: #63547e;
+      --st-on: #11111b;
+    }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.focus\:ring-red-500:focus, .ring-red-500) { --tw-ring-color: var(--st-red) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-blue-500, .bg-blue-600) { background-color: var(--st-blue) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-blue-900\/50, .bg-blue-950) { background-color: var(--st-blue-t) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-blue-900) { background-color: var(--st-blue-t2) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-emerald-500, .bg-green-500, .bg-green-600, .bg-green-700, .hover\:bg-green-600:hover) { background-color: var(--st-green) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-emerald-500\/20, .bg-emerald-950, .bg-green-500\/10, .bg-green-500\/20, .bg-green-950) { background-color: var(--st-green-t) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-green-900, .hover\:bg-green-500\/10:hover, .hover\:bg-green-500\/20:hover, .hover\:bg-green-600\/20:hover, .hover\:bg-green-900:hover) { background-color: var(--st-green-t2) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-violet-500) { background-color: var(--st-mauve) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-violet-950) { background-color: var(--st-mauve-t) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-red-500, .bg-red-600, .bg-red-700, .hover\:bg-red-600:hover, .hover\:bg-red-700:hover) { background-color: var(--st-red) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-red-950) { background-color: var(--st-red-t) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-red-800, .hover\:bg-red-500\/10:hover, .hover\:bg-red-500\/20:hover, .hover\:bg-red-950:hover) { background-color: var(--st-red-t2) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-amber-500, .bg-amber-600, .bg-amber-700, .bg-yellow-400, .hover\:bg-amber-700:hover) { background-color: var(--st-yellow) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-amber-500\/10, .bg-amber-500\/20, .bg-amber-900\/50, .bg-amber-950, .bg-amber-950\/40, .bg-amber-950\/50) { background-color: var(--st-yellow-t) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-amber-800, .bg-amber-900, .hover\:bg-amber-900\/50:hover, .hover\:bg-amber-950:hover) { background-color: var(--st-yellow-t2) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-green-500, .hover\:border-green-500:hover) { border-color: var(--st-green) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-emerald-800, .border-green-700, .border-green-800, .hover\:border-green-700:hover) { border-color: var(--st-green-b) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-violet-600) { border-color: var(--st-mauve) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-red-400, .border-red-500, .focus\:border-red-500:focus, .hover\:border-red-400:hover, .hover\:border-red-500:hover) { border-color: var(--st-red) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-red-700, .border-red-800, .border-red-900, .border-red-900\/50, .hover\:border-red-700:hover, .hover\:border-red-800:hover, .hover\:border-red-900:hover) { border-color: var(--st-red-b) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-amber-500) { border-color: var(--st-yellow) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.border-amber-500\/20, .border-amber-500\/30, .border-amber-700, .border-amber-800, .border-amber-900, .border-amber-900\/50, .hover\:border-amber-900:hover) { border-color: var(--st-yellow-b) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.text-blue-400) { color: var(--st-blue) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.hover\:text-green-400:hover, .text-emerald-400, .text-emerald-500, .text-green-400, .text-green-500, .text-green-600) { color: var(--st-green) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.text-emerald-300) { color: var(--st-green-l) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.text-violet-400) { color: var(--st-mauve) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.hover\:text-red-400:hover, .text-red-400, .text-red-400\/80, .text-red-500, .text-red-600) { color: var(--st-red) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.hover\:text-red-300:hover, .text-red-300) { color: var(--st-red-l) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.hover\:text-amber-400:hover, .text-amber-400, .text-amber-500, .text-amber-600, .text-amber-700) { color: var(--st-yellow) !important; }
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.hover\:text-amber-300:hover, .text-amber-100, .text-amber-200, .text-amber-300) { color: var(--st-yellow-l) !important; }
+    /* Pastel fills take dark text, like the accent */
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-amber-500, .bg-amber-600, .bg-amber-700, .bg-blue-500, .bg-blue-600, .bg-emerald-500, .bg-green-500, .bg-green-600, .bg-green-700, .bg-red-500, .bg-red-600, .bg-red-700, .bg-violet-500, .bg-yellow-400).text-white,
+    html[data-theme^="ctp-"]:not([data-status-colors="tailwind"]) :is(.bg-amber-500, .bg-amber-600, .bg-amber-700, .bg-blue-500, .bg-blue-600, .bg-emerald-500, .bg-green-500, .bg-green-600, .bg-green-700, .bg-red-500, .bg-red-600, .bg-red-700, .bg-violet-500, .bg-yellow-400) .text-white { color: var(--st-on) !important; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       Shared override rules — apply to all themes via the variables above
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* Backgrounds */
+    body                            { background-color: var(--bg-pg); }
+    .bg-gray-950                    { background-color: var(--bg-pg) !important; }
+    .bg-gray-900                    { background-color: var(--bg-sf) !important; }
+    .bg-gray-800                    { background-color: var(--bg-el) !important; }
+    .bg-gray-750                    { background-color: var(--bg-h1) !important; }
+    .bg-gray-700                    { background-color: var(--bg-h2) !important; }
+    .bg-gray-600                    { background-color: var(--bg-h3) !important; }
+    .hover\:bg-gray-800:hover       { background-color: var(--bg-el) !important; }
+    .hover\:bg-gray-750:hover       { background-color: var(--bg-h1) !important; }
+    .hover\:bg-gray-700:hover       { background-color: var(--bg-h2) !important; }
+    .hover\:bg-gray-600:hover       { background-color: var(--bg-h3) !important; }
+    .bg-gray-800\/30                { background-color: rgba(var(--bg-el-r),var(--bg-el-g),var(--bg-el-b),.3) !important; }
+    .bg-gray-800\/50                { background-color: rgba(var(--bg-el-r),var(--bg-el-g),var(--bg-el-b),.5) !important; }
+
+    /* Borders */
+    .border-gray-800                { border-color: var(--bd-1) !important; }
+    .border-gray-700                { border-color: var(--bd-2) !important; }
+    .border-gray-600                { border-color: var(--bd-3) !important; }
+
+    /* Muted text */
+    .text-gray-500                  { color: var(--tx-m)  !important; }
+    .text-gray-600                  { color: var(--tx-x)  !important; }
+    .text-gray-700                  { color: var(--tx-xx) !important; }
+    .placeholder-gray-600::placeholder { color: var(--ph) !important; }
+
+    /* Scrollbar */
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 2px; }
+
+    /* Accent — fill */
+    .bg-indigo-600                  { background-color: var(--ac)   !important; }
+    .bg-indigo-500                  { background-color: var(--ac-h) !important; }
+    .bg-indigo-700                  { background-color: var(--ac-d) !important; }
+    .bg-indigo-950                  { background-color: var(--ac-sf) !important; }
+    .hover\:bg-indigo-600:hover     { background-color: var(--ac)   !important; }
+    .hover\:bg-indigo-500:hover     { background-color: var(--ac-h) !important; }
+    .bg-indigo-500\/20              { background-color: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.2) !important; }
+    .bg-indigo-600\/20              { background-color: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.2) !important; }
+    .bg-indigo-950\/50              { background-color: rgba(var(--ac-r),var(--ac-g),var(--ac-b),.1) !important; }
+
+    /* Accent — text */
+    .text-indigo-400                { color: var(--ac-t4) !important; }
+    .text-indigo-300                { color: var(--ac-t3) !important; }
+    .text-indigo-500                { color: var(--ac-t5) !important; }
+    .text-indigo-600                { color: var(--ac-t6) !important; }
+
+    /* Accent — border / focus ring */
+    .border-indigo-500              { border-color: var(--ac-bd)  !important; }
+    .border-indigo-900              { border-color: var(--ac-bd9) !important; }
+    .focus\:border-indigo-500:focus { border-color: var(--ac-bd)  !important; }
+    .accent-indigo-500              { accent-color: var(--ac)     !important; }
+
+    /* ── Light-theme text overrides ─────────────────────────────────── */
+    html:not(.dark) .text-white    { color: var(--tx-p)  !important; }
+    html:not(.dark) .text-gray-100 { color: var(--tx-s1) !important; }
+    html:not(.dark) .text-gray-200 { color: var(--tx-s2) !important; }
+    html:not(.dark) .text-gray-300 { color: var(--tx-s3) !important; }
+    html:not(.dark) .text-gray-400 { color: var(--tx-s4) !important; }
+
+    /* Opacity-variant overrides for light themes (hardcoded rgba not caught by .bg-gray-900) */
+    html:not(.dark) .bg-gray-900\/50  { background-color: rgba(var(--bg-el-r),var(--bg-el-g),var(--bg-el-b),.5) !important; }
+    html:not(.dark) .border-gray-800\/60 { border-color: var(--bd-1) !important; }
+
+    /* Restore white text on colored fill backgrounds */
+    html:not(.dark) [class*="bg-indigo-"] .text-white,
+    html:not(.dark) [class*="bg-indigo-"].text-white,
+    html:not(.dark) [class*="bg-red-"] .text-white,
+    html:not(.dark) [class*="bg-red-"].text-white,
+    html:not(.dark) [class*="bg-emerald-"] .text-white,
+    html:not(.dark) [class*="bg-emerald-"].text-white,
+    html:not(.dark) [class*="bg-green-"] .text-white,
+    html:not(.dark) [class*="bg-amber-"] .text-white { color: #ffffff !important; }
+
+    /* Inputs on light bg */
+    html:not(.dark) input[class*="bg-gray"],
+    html:not(.dark) textarea[class*="bg-gray"],
+    html:not(.dark) select[class*="bg-gray"] {
+      background-color: var(--bg-sf) !important;
+      color: var(--tx-p) !important;
+    }
+
+    /* ── Custom accent (CSS vars injected per-user via customAccentVars) */
+    html[data-theme="custom"] .bg-indigo-600           { background-color: var(--ca)      !important; }
+    html[data-theme="custom"] .bg-indigo-500           { background-color: var(--ca-hover) !important; }
+    html[data-theme="custom"] .bg-indigo-700           { background-color: var(--ca-dark)  !important; }
+    html[data-theme="custom"] .hover\:bg-indigo-600:hover { background-color: var(--ca)   !important; }
+    html[data-theme="custom"] .hover\:bg-indigo-500:hover { background-color: var(--ca-hover) !important; }
+    html[data-theme="custom"] .text-indigo-400         { color: var(--ca-light) !important; }
+    html[data-theme="custom"] .text-indigo-300         { color: var(--ca-muted) !important; }
+    html[data-theme="custom"] .text-indigo-500         { color: var(--ca-hover) !important; }
+    html[data-theme="custom"] .text-indigo-600         { color: var(--ca)       !important; }
+    html[data-theme="custom"] .border-indigo-500       { border-color: var(--ca-hover)  !important; }
+    html[data-theme="custom"] .accent-indigo-500       { accent-color: var(--ca)        !important; }
+    html[data-theme="custom"] .bg-indigo-500\/20       { background-color: rgba(var(--ca-r),var(--ca-g),var(--ca-b),.2) !important; }
+    html[data-theme="custom"] .bg-indigo-600\/20       { background-color: rgba(var(--ca-r),var(--ca-g),var(--ca-b),.2) !important; }
+    html[data-theme="custom"] .bg-indigo-950\/50       { background-color: rgba(var(--ca-r),var(--ca-g),var(--ca-b),.1) !important; }
+    html[data-theme="custom"] .focus\:border-indigo-500:focus { border-color: var(--ca-hover) !important; }
+  </style>
+  <% if (_theme === 'custom' && _customAccentVars) { %>
+  <style>html[data-theme="custom"] { <%= _customAccentVars %> }</style>
+  <% } %>
+  <%- typeof style !== 'undefined' ? style : '' %>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen antialiased">
+
+  <div class="flex h-screen overflow-hidden">
+
+    <%- include('../partials/sidebar') %>
+
+    <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+
+      <%- include('../partials/topbar') %>
+
+      <% if (typeof _maintenanceMessage !== 'undefined' && _maintenanceMessage) { %>
+        <div class="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center gap-2 shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-amber-400 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <p class="text-xs text-amber-300"><%= _maintenanceMessage %></p>
+        </div>
+      <% } %>
+
+      <main class="flex-1 overflow-y-auto scrollbar-thin p-4 lg:p-6 pb-24 lg:pb-6">
+        <%- body %>
+      </main>
+
+    </div>
+  </div>
+
+  <%- include('../partials/bottom-nav') %>
+  <% if (locals.aiEnabled) { %><%- include('../partials/capture-fab') %><% } %>
+  <%- include('../partials/search-modal') %>
+
+  <!-- Keyboard shortcuts modal -->
+  <div id="shortcuts-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+       onclick="if(event.target===this)closeShortcuts()">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-sm font-semibold text-white">Keyboard Shortcuts</h2>
+        <button onclick="closeShortcuts()" class="text-gray-500 hover:text-gray-300 transition-colors text-lg leading-none">✕</button>
+      </div>
+      <div class="grid grid-cols-2 gap-x-10 gap-y-5">
+        <div>
+          <p class="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">Navigation</p>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Today</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">D</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Tasks</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">T</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">New note</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">N</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Capture</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">C</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Analytics</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">A</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Bookmarks</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">B</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Help</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">H</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Settings</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">,</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Search</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">/</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">This panel</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">?</kbd>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mb-3">Note editor</p>
+          <div class="space-y-2.5">
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Bold</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">⌘B</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Italic</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">⌘I</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Link</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">⌘K</kbd>
+            </div>
+            <div class="flex items-center justify-between gap-4">
+              <span class="text-sm text-gray-400">Checklist</span>
+              <kbd class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono bg-gray-800 border border-gray-700 text-gray-300">toolbar</kbd>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openShortcuts()  { document.getElementById('shortcuts-modal').classList.remove('hidden'); }
+    function closeShortcuts() { document.getElementById('shortcuts-modal').classList.add('hidden'); }
+
+    // N opens a new note in the workspace when it's the default (Settings → Notes) or when you're in it
+    async function newWorkspaceNote() {
+      if (window.obeloFlush && !(await window.obeloFlush())) return; // save any unsaved edits first
+      if (window.obeloMarkReload) window.obeloMarkReload();
+      const f = document.createElement('form');
+      f.method = 'POST';
+      f.action = '/notes/workspace/new';
+      const i = document.createElement('input');
+      i.type = 'hidden'; i.name = 'folderId'; i.value = '';
+      f.appendChild(i);
+      const t = document.createElement('input');
+      t.type = 'hidden'; t.name = '_csrf'; t.value = window.obeloCsrfToken;
+      f.appendChild(t);
+      document.body.appendChild(f);
+      f.submit();
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeShortcuts(); return; }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'd' || e.key === 'D') window.location.href = '/';
+      if (e.key === 't' || e.key === 'T') window.location.href = '/tasks';
+      if (e.key === 'n' || e.key === 'N') {
+        newWorkspaceNote();
+      }
+      if (e.key === 'c' || e.key === 'C') window.location.href = '/capture';
+      if (e.key === 'a' || e.key === 'A') window.location.href = '/analytics';
+      if (e.key === 'b' || e.key === 'B') window.location.href = '/bookmarks';
+      if (e.key === 'h' || e.key === 'H') window.location.href = '/help';
+      if (e.key === ',') window.location.href = '/settings';
+      if (e.key === '/') { e.preventDefault(); if (typeof openSearch === 'function') openSearch(); }
+      if (e.key === '?') { e.preventDefault(); openShortcuts(); }
+    });
+
+    // Register service worker for PWA installability
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
+  <%- typeof script !== 'undefined' ? script : '' %>
+</body>
+</html>

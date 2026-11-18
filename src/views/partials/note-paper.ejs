@@ -1,0 +1,16 @@
+<%
+  // Handwriting paper (Settings > Notes). "theme" uses the theme's own page colour and border;
+  // "dark" and "white" are fixed. Ink shades follow in public/js/note-paper.js.
+  const _np = typeof _notePaper !== 'undefined' ? _notePaper : 'theme';
+  const _pd = typeof _paperDark !== 'undefined' ? _paperDark : true;
+  const _ground = _np === 'theme' ? 'var(--bg-pg)' : (_np === 'dark' ? '#0f172a' : '#ffffff');
+  const _rule   = _np === 'theme' ? 'var(--bd-1)'  : (_np === 'dark' ? '#182035' : '#e2e8f0');
+%>
+<style>
+  .note-paper {
+    background-color: <%- _ground %>;
+    background-image: repeating-linear-gradient(transparent 0px, transparent 35px, <%- _rule %> 35px, <%- _rule %> 36px);
+  }
+</style>
+<script>window.OBELO_PAPER_DARK = <%- _pd ? 'true' : 'false' %>;</script>
+<script src="/js/note-paper.js"></script>
