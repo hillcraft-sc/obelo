@@ -1,0 +1,192 @@
+name: Obelo
+configFiles:
+  Debug: Signing.xcconfig
+  Release: Signing.xcconfig
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "27.0"
+    macOS: "27.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    MARKETING_VERSION: "1.16.2"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: $(OBELO_TEAM_ID)
+targets:
+  Obelo:
+    type: application
+    platform: iOS
+    sources:
+      - path: Obelo
+      - path: Shared
+      - ObeloWidget/TodayWidget.swift
+    dependencies:
+      - target: ObeloShare
+      - target: ObeloWidget
+    entitlements:
+      path: Obelo/Resources/Obelo.entitlements
+      properties:
+        com.apple.security.application-groups: [$(OBELO_APP_GROUP)]
+    info:
+      path: Obelo/Resources/Info.plist
+      properties:
+        ObeloAppGroup: $(OBELO_APP_GROUP)
+        CFBundleDisplayName: Obelo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        CFBundleURLTypes:
+          - CFBundleURLName: $(OBELO_BUNDLE_ID).auth
+            CFBundleURLSchemes: [obelo]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSMicrophoneUsageDescription: Obelo uses the microphone when you dictate a capture.
+        NSCameraUsageDescription: Obelo uses the camera when you add a photo to a note.
+        NSSpeechRecognitionUsageDescription: Obelo turns your dictation into text for Capture.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(OBELO_BUNDLE_ID)
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+
+  # The Mac app: a native SwiftUI target: the shared sources (`Shared`) plus its own interface (`ObeloMac`). Same bundle id as
+  # the iPhone app, so the App Store record can add macOS as a universal purchase. No widget or
+  # share extension on the Mac yet, so it keeps its sign-in in its own (sandboxed) defaults.
+  ObeloMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: Shared
+      - path: ObeloMac
+        excludes:
+          - ObeloMac.entitlements
+          - Info.plist
+      # The logo and app icon (it has the Mac icon sizes too)
+      - Obelo/Resources/Assets.xcassets
+      - Obelo/Resources/PrivacyInfo.xcprivacy   # the App Store asks for it on every platform
+    entitlements:
+      path: ObeloMac/ObeloMac.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.personal-information.photos-library: true
+    info:
+      path: ObeloMac/Info.plist
+      properties:
+        ObeloAppGroup: $(OBELO_APP_GROUP)
+        CFBundleDisplayName: Obelo
+        CFBundleName: Obelo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSApplicationCategoryType: public.app-category.productivity
+        CFBundleURLTypes:
+          - CFBundleURLName: $(OBELO_BUNDLE_ID).auth
+            CFBundleURLSchemes: [obelo]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_NAME: Obelo
+        PRODUCT_BUNDLE_IDENTIFIER: $(OBELO_BUNDLE_ID)
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+
+  # Share sheet: "Share → Obelo" saves a bookmark or sends text to Capture. It shares the
+  # app's sign-in through the App Group (cookies + server address), and compiles the app's
+  # core files rather than duplicating them.
+  ObeloShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ObeloShare
+      - Shared/Core/APIClient.swift
+      - Shared/Core/AppGroup.swift
+      - Obelo/Core/Platform.swift
+      - Shared/Core/PlatformTypes.swift
+      - Shared/Core/Theme.swift
+      - Shared/Core/Models.swift
+      - Shared/Core/Format.swift
+      - Obelo/Components/Components.swift
+      - Obelo/Components/RowsAndText.swift
+      - Obelo/Components/Keyboard.swift
+      - Obelo/Features/Share/ShareView.swift
+      - Obelo/Resources/Assets.xcassets
+      - Obelo/Resources/PrivacyInfo.xcprivacy
+    entitlements:
+      path: ObeloShare/ObeloShare.entitlements
+      properties:
+        com.apple.security.application-groups: [$(OBELO_APP_GROUP)]
+    info:
+      path: ObeloShare/Info.plist
+      properties:
+        ObeloAppGroup: $(OBELO_APP_GROUP)
+        CFBundleDisplayName: Obelo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(OBELO_BUNDLE_ID).share
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) SHARE_EXTENSION
+
+  # Home screen / lock screen widget: today's focus, due items and routines, with tick-off
+  # buttons. Reads the API with the app's sign-in (App Group), like the share extension.
+  ObeloWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ObeloWidget
+      - Shared/Core/APIClient.swift
+      - Shared/Core/AppGroup.swift
+      - Shared/Core/Theme.swift
+      - Shared/Core/Models.swift
+      - Shared/Core/Format.swift
+      - Obelo/Resources/PrivacyInfo.xcprivacy
+    entitlements:
+      path: ObeloWidget/ObeloWidget.entitlements
+      properties:
+        com.apple.security.application-groups: [$(OBELO_APP_GROUP)]
+    info:
+      path: ObeloWidget/Info.plist
+      properties:
+        ObeloAppGroup: $(OBELO_APP_GROUP)
+        CFBundleDisplayName: Obelo
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(OBELO_BUNDLE_ID).widget
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION SHARE_EXTENSION

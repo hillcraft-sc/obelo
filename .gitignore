@@ -1,0 +1,24 @@
+node_modules/
+.env*
+docker-compose.override.yml
+
+!.env.example
+
+# iOS: the Xcode project is generated from ios/project.yml (xcodegen generate)
+ios/build/
+ios/Obelo.xcodeproj/
+
+# macOS Finder metadata
+.DS_Store
+
+# Claude Code: personal setup and settings, never committed
+CLAUDE.local.md
+.claude/settings.local.json
+# Quotes private conversation
+docs/CHANGES-SINCE-3.31.1.md
+
+# The built website (python3 website/build.py)
+website/public/
+
+# The maintainer's signing values (ios/Signing.xcconfig reads it)
+ios/Signing.local.xcconfig

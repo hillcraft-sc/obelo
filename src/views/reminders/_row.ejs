@@ -1,0 +1,94 @@
+<%
+  const due = reminder.dueDate ? new Date(reminder.dueDate) : null;
+  const now = new Date();
+  const todayStr = now.toDateString();
+  const dueCls = rowDueCls(reminder);
+  const ring = PRIORITY_RING[reminder.priority] || PRIORITY_RING.none;
+  const dueDisplay = formatDue(reminder);
+%>
+<div class="reminder-row relative overflow-hidden border-b border-gray-800 last:border-0"
+     id="reminder-<%= reminder.id %>">
+
+  <% if (!reminder.completed) { %>
+  <!-- Right swipe hint: complete -->
+  <div class="swipe-hint-r absolute inset-0 flex items-center pl-5 bg-green-700" style="opacity:0">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-white shrink-0">
+      <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+    </svg>
+    <span class="text-sm font-semibold text-white ml-2">Complete</span>
+  </div>
+  <!-- Left swipe hint: short=snooze, full=delete -->
+  <div class="swipe-hint-l absolute inset-0 flex items-center justify-end pr-5" style="opacity:0;background:#b45309">
+    <span class="swipe-l-label text-sm font-semibold text-white mr-2">Snooze 1h</span>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="swipe-snooze-icon w-5 h-5 text-white shrink-0">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="swipe-trash-icon w-5 h-5 text-white shrink-0" style="display:none">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    </svg>
+  </div>
+  <% } %>
+
+  <div class="swipe-content relative flex items-center gap-3 px-4 py-3 hover:bg-gray-800/30 group bg-gray-900">
+
+    <input type="checkbox" name="ids" value="<%= reminder.id %>" form="bulk-form-reminders"
+           class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900 shrink-0" />
+
+    <% if (reminder.completed) { %>
+      <button hx-post="/reminders/<%= reminder.id %>/restore"
+              hx-target="#reminder-<%= reminder.id %>" hx-swap="outerHTML"
+              class="w-5 h-5 rounded-full border-2 border-green-500 bg-green-500/20 flex items-center justify-center shrink-0 hover:border-red-400 transition-colors"
+              title="Restore">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 text-green-400">
+          <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    <% } else { %>
+      <button hx-post="/reminders/<%= reminder.id %>/complete"
+              hx-target="#reminder-<%= reminder.id %>" hx-swap="outerHTML"
+              class="w-5 h-5 rounded-full border-2 <%= ring %> hover:bg-green-500/20 hover:border-green-500 shrink-0 transition-colors"
+              title="Mark complete"></button>
+    <% } %>
+
+    <%- PRIORITY_ICON[reminder.priority] || PRIORITY_ICON.none %>
+
+    <a href="/reminders/<%= reminder.id %>"
+       class="flex-1 min-w-0 text-sm hover:text-white truncate transition-colors
+              <%= reminder.completed ? 'line-through text-gray-600' : 'text-gray-200' %>">
+      <%= reminder.title %>
+      <% if (reminder.recurring) { %>
+        <span class="text-[10px] text-gray-600 ml-1">↻</span>
+      <% } %>
+    </a>
+
+    <span class="text-xs shrink-0 <%= dueCls %>"><%= dueDisplay %></span>
+
+    <!-- Snooze actions (hover) — only for non-completed -->
+    <% if (!reminder.completed) { %>
+      <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button hx-post="/reminders/<%= reminder.id %>/snooze"
+                hx-vals='{"duration":"15min"}'
+                hx-target="#reminder-<%= reminder.id %>" hx-swap="outerHTML"
+                class="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-500 hover:text-amber-300 hover:bg-amber-950 border border-gray-700 transition-colors"
+                title="Snooze 15 minutes">15m</button>
+        <button hx-post="/reminders/<%= reminder.id %>/snooze"
+                hx-vals='{"duration":"1hour"}'
+                hx-target="#reminder-<%= reminder.id %>" hx-swap="outerHTML"
+                class="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-500 hover:text-amber-300 hover:bg-amber-950 border border-gray-700 transition-colors"
+                title="Snooze 1 hour">1h</button>
+        <button hx-post="/reminders/<%= reminder.id %>/snooze"
+                hx-vals='{"duration":"tomorrow"}'
+                hx-target="#reminder-<%= reminder.id %>" hx-swap="outerHTML"
+                class="px-1.5 py-0.5 rounded text-[10px] bg-gray-800 text-gray-500 hover:text-amber-300 hover:bg-amber-950 border border-gray-700 transition-colors"
+                title="Snooze to tomorrow">tmrw</button>
+      </div>
+    <% } %>
+
+    <a href="/reminders/<%= reminder.id %>/edit"
+       class="opacity-0 group-hover:opacity-100 text-gray-600 hover:text-gray-300 transition-all shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+      </svg>
+    </a>
+  </div>
+</div>

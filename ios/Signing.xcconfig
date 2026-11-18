@@ -1,0 +1,8 @@
+// Who signs and identifies the apps. The values here are placeholders, so a fresh copy of the code
+// builds without anyone's Apple account. The maintainer's real values go in Signing.local.xcconfig,
+// which Git ignores and which is read after these lines (see README.md, "Signing").
+OBELO_BUNDLE_ID = com.example.obelo
+OBELO_APP_GROUP = group.com.example.obelo
+OBELO_TEAM_ID =
+
+#include? "Signing.local.xcconfig"

@@ -1,0 +1,151 @@
+<div class="max-w-5xl mx-auto py-6 px-4">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-5">
+    <h1 class="text-2xl font-bold text-white"><%= rangeLabel %></h1>
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- View toggle -->
+      <div class="flex rounded-lg border border-gray-700 overflow-hidden text-sm">
+        <a href="/calendar?view=week&date=<%= anchorStr %>"
+           class="px-3 py-1.5 <%= view === 'week' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800' %> transition-colors">
+          Week
+        </a>
+        <a href="/calendar?view=month&date=<%= anchorStr %>"
+           class="px-3 py-1.5 border-l border-gray-700 <%= view === 'month' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800' %> transition-colors">
+          Month
+        </a>
+      </div>
+      <!-- Nav -->
+      <div class="flex items-center gap-1">
+        <a href="/calendar?view=<%= view %>&date=<%= prevAnchorStr %>"
+           class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 text-sm transition-colors">
+          ‹ Prev
+        </a>
+        <a href="/calendar?view=<%= view %>&date=<%= isoDate(new Date()) %>"
+           class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 text-sm transition-colors">
+          Today
+        </a>
+        <a href="/calendar?view=<%= view %>&date=<%= nextAnchorStr %>"
+           class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white border border-gray-700 text-sm transition-colors">
+          Next ›
+        </a>
+      </div>
+      <!-- New event -->
+      <a href="/calendar/events/new?date=<%= anchorStr %>"
+         class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm text-white font-medium transition-colors whitespace-nowrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        New event
+      </a>
+    </div>
+  </div>
+
+  <!-- No sources banner -->
+  <% if (sources.length === 0) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-amber-950 border border-amber-800 text-amber-300 text-sm flex items-center justify-between">
+      <span>No calendars connected. Events created here are stored locally only.</span>
+      <a href="/calendar/sources" class="underline hover:no-underline ml-4">Connect a calendar →</a>
+    </div>
+  <% } %>
+
+  <!-- ── WEEK VIEW ── -->
+  <% if (view === 'week') { %>
+    <div class="overflow-x-auto">
+    <div class="grid grid-cols-7 gap-1 min-w-[360px]">
+      <!-- Day headers -->
+      <% weekDays.forEach(day => { %>
+        <div class="text-center pb-2">
+          <div class="text-xs font-medium <%= day.isToday ? 'text-indigo-400' : 'text-gray-500' %>">
+            <%= day.date.toLocaleDateString('en-US', { weekday: 'short' }) %>
+          </div>
+          <a href="/calendar/events/new?date=<%= day.dateStr %>"
+             class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold mt-0.5 transition-colors
+                    <%= day.isToday
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-800' %>">
+            <%= day.date.getDate() %>
+          </a>
+        </div>
+      <% }); %>
+
+      <!-- Event columns -->
+      <% weekDays.forEach(day => { %>
+        <div class="min-h-24 space-y-1 border-t border-gray-800 pt-2">
+          <% if (day.events.length === 0) { %>
+            <div class="h-full"></div>
+          <% } %>
+          <% day.events.forEach(ev => { %>
+            <% const evColor = ev.localCalendar?.color || ev.source?.color || '#6366f1'; %>
+            <a href="/calendar/events/<%= ev.id %>"
+               class="block px-2 py-1 rounded text-xs leading-tight truncate hover:opacity-90 transition-opacity"
+               style="background-color: <%= evColor %>20; border-left: 3px solid <%= evColor %>; color: <%= evColor %>;">
+              <% if (!ev.allDay) { %>
+                <span class="opacity-75 text-[10px] block"><%= formatTime(new Date(ev.startAt)) %></span>
+              <% } %>
+              <span class="font-medium"><%= ev.title %></span>
+            </a>
+          <% }); %>
+        </div>
+      <% }); %>
+    </div>
+    </div>
+
+  <!-- ── MONTH VIEW ── -->
+  <% } else { %>
+    <div class="overflow-x-auto">
+    <!-- Day-of-week header -->
+    <div class="grid grid-cols-7 mb-1 min-w-[280px]">
+      <% ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => { %>
+        <div class="text-center text-xs font-medium text-gray-600 py-1"><%= d %></div>
+      <% }); %>
+    </div>
+    <div class="border border-gray-800 rounded-xl overflow-hidden min-w-[280px]">
+      <% monthGrid.forEach((week, wi) => { %>
+        <div class="grid grid-cols-7 <%= wi < monthGrid.length - 1 ? 'border-b border-gray-800' : '' %>">
+          <% week.forEach((cell, ci) => { %>
+            <div class="<%= ci < 6 ? 'border-r border-gray-800' : '' %> min-h-[60px] sm:min-h-[90px] p-1
+                        <%= !cell.inMonth ? 'opacity-30' : '' %>">
+              <a href="/calendar/events/new?date=<%= cell.dateStr %>"
+                 class="inline-flex items-center justify-center w-7 h-7 rounded-full text-sm mb-1 transition-colors
+                        <%= cell.dateStr === todayStr
+                          ? 'bg-indigo-600 text-white font-bold'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-white' %>">
+                <%= cell.date.getDate() %>
+              </a>
+              <% cell.events.slice(0, 3).forEach(ev => { %>
+                <% const evColor = ev.localCalendar?.color || ev.source?.color || '#6366f1'; %>
+                <a href="/calendar/events/<%= ev.id %>"
+                   class="block px-1.5 py-0.5 rounded text-[10px] truncate mb-0.5 hover:opacity-90"
+                   style="background-color: <%= evColor %>30; color: <%= evColor %>;">
+                  <%= ev.allDay ? '' : formatTime(new Date(ev.startAt)) + ' ' %><%= ev.title %>
+                </a>
+              <% }); %>
+              <% if (cell.events.length > 3) { %>
+                <div class="text-[10px] text-gray-600 pl-1">+<%= cell.events.length - 3 %> more</div>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      <% }); %>
+    </div>
+    </div>
+  <% } %>
+
+  <!-- Source legend -->
+  <% if (sources.length > 0) { %>
+    <div class="flex flex-wrap gap-4 mt-4">
+      <% sources.forEach(src => { %>
+        <span class="flex items-center gap-1.5 text-xs text-gray-500">
+          <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color:<%= src.color %>;"></span>
+          <%= src.name %>
+          <% if (src.lastSynced) { %>
+            <span class="text-gray-700">· synced <%= new Date(src.lastSynced).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %></span>
+          <% } %>
+        </span>
+      <% }); %>
+      <a href="/calendar/sources" class="text-xs text-gray-600 hover:text-gray-400 transition-colors">Manage →</a>
+    </div>
+  <% } %>
+
+</div>

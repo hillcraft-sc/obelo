@@ -1,0 +1,141 @@
+<div class="max-w-2xl mx-auto py-6 px-4">
+
+  <!-- Back link -->
+  <a href="/reminders" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+    </svg>
+    Reminders
+  </a>
+
+  <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+    <!-- Header bar -->
+    <div class="px-6 pt-6 pb-4 border-b border-gray-800">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-3 h-3 rounded-full shrink-0 mt-1 <%= PRIORITY_DOT[reminder.priority] || PRIORITY_DOT.none %>"></div>
+          <h1 class="text-xl font-semibold text-white leading-snug
+                     <%= reminder.completed ? 'line-through text-gray-500' : '' %>">
+            <%= reminder.title %>
+          </h1>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <a href="/reminders/<%= reminder.id %>/edit"
+             class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-300 hover:text-white border border-gray-700 transition-colors">
+            Edit
+          </a>
+          <form method="POST" action="/reminders/<%= reminder.id %>/delete"
+                onsubmit="return confirm('Delete this reminder?')">
+            <button type="submit"
+                    class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-red-950 text-sm text-gray-500 hover:text-red-400 border border-gray-700 transition-colors">
+              Delete
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Meta row -->
+      <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <% if (reminder.dueDate || reminder.dueTime) { %>
+          <span class="flex items-center gap-1.5 <%= isOverdue ? 'text-red-400 font-medium' : isToday ? 'text-green-400' : 'text-gray-400' %>">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <% if (reminder.dueDate) { %>
+              <%= new Date(reminder.dueDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }) %>
+            <% } %>
+            <% if (reminder.dueTime) { %> at <%= fmtTime(reminder.dueTime) %><% } %>
+            <% if (isOverdue) { %><span class="text-xs font-bold uppercase tracking-wider">Overdue</span><% } %>
+          </span>
+        <% } %>
+
+        <% if (reminder.reminderAt) { %>
+          <span class="text-gray-600 text-xs">
+            Notify: <%= new Date(reminder.reminderAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: hour12, timeZone: currentUser.timezone || 'UTC' }) %>
+          </span>
+        <% } %>
+
+        <% if (reminder.recurring && reminder.recurRule) { %>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 text-xs border border-indigo-800">
+            ↻ <%= recurRuleLabel(reminder.recurRule) %>
+          </span>
+        <% } %>
+
+        <% if (reminder.priority && reminder.priority !== 'none') { %>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-400 border border-gray-700">
+            <%- PRIORITY_ICON[reminder.priority] %>
+            <%= reminder.priority %>
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <% if (reminder.tags && reminder.tags.length > 0) { %>
+      <div class="px-6 py-3 flex flex-wrap gap-1.5 border-t border-gray-800/50">
+        <% reminder.tags.forEach(tag => { %>
+          <span class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-400 border border-gray-700">#<%= tag %></span>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <!-- Notes body -->
+    <% if (reminder.notes) { %>
+      <div class="px-6 py-4 text-gray-300 text-sm leading-relaxed whitespace-pre-wrap"><%= reminder.notes %></div>
+    <% } %>
+
+    <!-- Actions -->
+    <div class="px-6 py-4 border-t border-gray-800 flex flex-wrap items-center gap-3">
+      <% if (!reminder.completed) { %>
+        <form method="POST" action="/reminders/<%= reminder.id %>/complete">
+          <button type="submit"
+                  class="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-700 hover:bg-green-600 text-sm text-white font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+              <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+            </svg>
+            Mark complete
+          </button>
+        </form>
+        <span class="text-gray-700 text-sm">Snooze:</span>
+        <form method="POST" action="/reminders/<%= reminder.id %>/snooze" class="inline">
+          <input type="hidden" name="duration" value="15min">
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-amber-950 text-sm text-gray-400 hover:text-amber-300 border border-gray-700 transition-colors">
+            15 min
+          </button>
+        </form>
+        <form method="POST" action="/reminders/<%= reminder.id %>/snooze" class="inline">
+          <input type="hidden" name="duration" value="1hour">
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-amber-950 text-sm text-gray-400 hover:text-amber-300 border border-gray-700 transition-colors">
+            1 hour
+          </button>
+        </form>
+        <form method="POST" action="/reminders/<%= reminder.id %>/snooze" class="inline">
+          <input type="hidden" name="duration" value="tomorrow">
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-amber-950 text-sm text-gray-400 hover:text-amber-300 border border-gray-700 transition-colors">
+            Tomorrow
+          </button>
+        </form>
+      <% } else { %>
+        <span class="text-green-500 text-sm flex items-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+            <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+          </svg>
+          Completed
+          <% if (reminder.completedAt) { %>
+            <%= new Date(reminder.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: currentUser.timezone || 'UTC' }) %>
+          <% } %>
+        </span>
+        <form method="POST" action="/reminders/<%= reminder.id %>/restore">
+          <button type="submit" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-400 hover:text-gray-200 border border-gray-700 transition-colors">
+            Restore
+          </button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Meta info -->
+  <div class="mt-4 text-xs text-gray-700 px-1 flex gap-4">
+    <span>Created <%= new Date(reminder.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: currentUser.timezone || 'UTC' }) %></span>
+  </div>
+</div>

@@ -1,0 +1,1282 @@
+<div class="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+  <!-- Header -->
+  <%- include('../partials/page-heading', { heading: 'Settings', description: 'Your account and app preferences.' }) %>
+
+  <!-- Alerts -->
+  <% if (success) { %>
+    <div class="rounded-xl bg-emerald-950 border border-emerald-800 px-4 py-3 text-sm text-emerald-300"><%= success %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <!-- Tab nav -->
+  <div class="flex gap-1 bg-gray-900 rounded-xl p-1 border border-gray-800 overflow-x-auto">
+    <% [
+      { key: 'account',       label: 'Account' },
+      { key: 'modules',       label: 'Modules' },
+      { key: 'notifications', label: 'Notifications' },
+      { key: 'appearance',    label: 'Appearance' },
+      { key: 'notes',         label: 'Notes' },
+      { key: 'calendars',     label: 'Calendars' },
+      { key: 'dashboard',     label: 'Dashboard' },
+      { key: 'tags',          label: 'Tags' },
+      { key: 'shortcuts',     label: 'Shortcuts' },
+      { key: 'data',          label: 'Data' },
+    ].forEach(t => { %>
+      <a href="/settings?tab=<%= t.key %>"
+         class="shrink-0 text-center text-xs px-3 py-2 rounded-lg font-medium transition-colors whitespace-nowrap
+                <%= tab === t.key ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-gray-300' %>">
+        <%= t.label %>
+      </a>
+    <% }); %>
+  </div>
+
+  <!-- ── Account ───────────────────────────────────────────────────── -->
+  <% if (tab === 'account') { %>
+    <div class="space-y-4">
+
+      <!-- Profile -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div class="flex items-center gap-4">
+          <!-- Clickable avatar upload -->
+          <form action="/settings/avatar" method="POST" enctype="multipart/form-data" id="avatar-form">
+            <label class="relative cursor-pointer group shrink-0" title="Click to change avatar">
+              <% if (_avatarUrl) { %>
+                <img src="<%= _avatarUrl %><% if (_hasCustomAvatar) { %>?v=<%= Date.now() %><% } %>"
+                     alt="Avatar" id="avatar-preview"
+                     class="w-14 h-14 rounded-full object-cover bg-gray-700" />
+              <% } else { %>
+                <div class="w-14 h-14 rounded-full bg-indigo-700 flex items-center justify-center text-xl font-semibold text-white" id="avatar-preview">
+                  <%= currentUser.displayName.charAt(0).toUpperCase() %>
+                </div>
+              <% } %>
+              <div class="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-white">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" />
+                </svg>
+              </div>
+              <input type="file" name="avatar" accept="image/*" class="hidden"
+                     onchange="document.getElementById('avatar-form').submit()" />
+            </label>
+          </form>
+          <div>
+            <h2 class="text-sm font-semibold text-white">Profile</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Click avatar to upload a photo</p>
+            <% if (_hasCustomAvatar) { %>
+              <form action="/settings/avatar/remove" method="POST" class="mt-1">
+                <button type="submit" class="text-xs text-gray-600 hover:text-red-400 transition-colors">Remove custom avatar</button>
+              </form>
+            <% } else if (currentUser.email) { %>
+              <p class="text-xs text-gray-600 mt-0.5">Using <a href="https://gravatar.com" target="_blank" class="text-indigo-400 hover:text-indigo-300">Gravatar</a></p>
+            <% } %>
+          </div>
+        </div>
+        <form method="POST" action="/settings/account" class="space-y-4">
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Display name</label>
+            <input type="text" name="displayName" value="<%= currentUser.displayName %>"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                          placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Email address</label>
+            <input type="email" name="email" value="<%= userEmail %>"
+                   placeholder="you@example.com"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                          placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+            <p class="text-xs text-gray-600 mt-1">Used for Gravatar and notification delivery</p>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-2">Time Format</label>
+            <div class="flex gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="timeFormat" value="12h" <%= timeFormat === '12h' ? 'checked' : '' %>
+                       class="w-4 h-4 text-indigo-600 bg-gray-800 border-gray-600 focus:ring-indigo-500" />
+                <span class="text-sm text-gray-300">12-hour <span class="text-gray-500">(1:30 PM)</span></span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="timeFormat" value="24h" <%= timeFormat === '24h' ? 'checked' : '' %>
+                       class="w-4 h-4 text-indigo-600 bg-gray-800 border-gray-600 focus:ring-indigo-500" />
+                <span class="text-sm text-gray-300">24-hour <span class="text-gray-500">(13:30)</span></span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Timezone</label>
+            <select name="timezone"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                           focus:outline-hidden focus:border-indigo-500">
+              <% [
+                'America/New_York',
+                'America/Chicago',
+                'America/Denver',
+                'America/Los_Angeles',
+                'America/Phoenix',
+                'America/Anchorage',
+                'Pacific/Honolulu',
+                'Europe/London',
+                'Europe/Paris',
+                'Europe/Berlin',
+                'Asia/Tokyo',
+                'Asia/Shanghai',
+                'Asia/Kolkata',
+                'Australia/Sydney',
+              ].forEach(tz => { %>
+                <option value="<%= tz %>" <%= (currentUser.timezone || 'America/New_York') === tz ? 'selected' : '' %>>
+                  <%= tz.replace('_', ' ') %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
+          <button type="submit"
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+            Save profile
+          </button>
+        </form>
+      </div>
+
+      <!-- Password -->
+      <% if (passwordEnabled && !demoMode) { %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white"><%= hasPassword ? 'Password' : 'Add a password' %></h2>
+          <p class="text-xs text-gray-500 mt-0.5">
+            <%= hasPassword
+              ? 'Changing it signs you out of your other devices.'
+              : 'You sign in with SSO now. A password lets you sign in without it too.' %>
+          </p>
+        </div>
+        <form method="POST" action="/settings/password" class="space-y-3">
+          <% const _pw = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-hidden focus:border-indigo-500'; %>
+          <% if (hasPassword) { %>
+            <div>
+              <label for="currentPassword" class="block text-xs text-gray-400 mb-1">Current password</label>
+              <input id="currentPassword" type="password" name="currentPassword" required autocomplete="current-password" class="<%= _pw %>" />
+            </div>
+          <% } %>
+          <div>
+            <label for="newPassword" class="block text-xs text-gray-400 mb-1">New password <span class="text-gray-600">(at least <%= minPasswordLength %> characters)</span></label>
+            <input id="newPassword" type="password" name="newPassword" required minlength="<%= minPasswordLength %>" autocomplete="new-password" class="<%= _pw %>" />
+          </div>
+          <div>
+            <label for="confirmPassword" class="block text-xs text-gray-400 mb-1">New password again</label>
+            <input id="confirmPassword" type="password" name="confirmPassword" required autocomplete="new-password" class="<%= _pw %>" />
+          </div>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+            <%= hasPassword ? 'Change password' : 'Save password' %>
+          </button>
+        </form>
+      </div>
+      <% } %>
+
+      <!-- Signed-in devices -->
+      <%
+        const _sessFmt = d => d
+          ? d.toLocaleString('en-US', { timeZone: currentUser.timezone || 'UTC', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12 })
+          : 'Unknown';
+        const _otherSessions = sessions.filter(s => !s.current).length;
+      %>
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Signed-in devices</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Where you're signed in to Obelo right now. Sign out anything you don't recognise.</p>
+        </div>
+        <div class="divide-y divide-gray-800">
+          <% sessions.forEach(s => { %>
+            <div class="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-100">
+                  <%= s.device %>
+                  <% if (s.current) { %><span class="text-xs text-emerald-400 ml-1">(this device)</span><% } %>
+                </p>
+                <p class="text-xs text-gray-500 mt-0.5">
+                  Signed in <%= _sessFmt(s.signedInAt) %>
+                  · Last active <%= _sessFmt(s.lastSeenAt) %>
+                  <% if (s.ip) { %>· <span class="font-mono"><%= s.ip %></span><% } %>
+                </p>
+              </div>
+              <% if (!s.current) { %>
+                <form method="POST" action="/settings/sessions/<%= s.key %>/end"
+                      data-confirm="Sign out <%= s.device %>?" onsubmit="return confirm(this.dataset.confirm)">
+                  <button type="submit"
+                          class="text-xs px-2.5 py-1 rounded-lg border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-400 transition-colors">
+                    Sign out
+                  </button>
+                </form>
+              <% } %>
+            </div>
+          <% }) %>
+        </div>
+        <% if (_otherSessions) { %>
+          <form method="POST" action="/settings/sessions/end-others"
+                data-confirm="Sign out <%= _otherSessions %> other device<%= _otherSessions === 1 ? '' : 's' %>? You'll stay signed in here."
+                onsubmit="return confirm(this.dataset.confirm)">
+            <button type="submit"
+                    class="px-4 py-2 border border-gray-700 hover:border-red-500 text-gray-300 hover:text-red-400 text-sm rounded-lg transition-colors">
+              Sign out all other devices
+            </button>
+          </form>
+        <% } %>
+      </div>
+
+      <!-- Note lock PIN -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Note Lock PIN</h2>
+          <p class="text-xs text-gray-500 mt-0.5">4–6 digit PIN required to unlock encrypted notes. Works with any login method including SSO.</p>
+          <% if (hasNoteLockPin) { %>
+            <span class="inline-flex items-center gap-1 mt-1.5 text-[11px] text-emerald-400">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd" /></svg>
+              PIN set
+            </span>
+          <% } else { %>
+            <span class="text-[11px] text-gray-500">Not set — notes cannot be locked until you create a PIN</span>
+          <% } %>
+        </div>
+        <form method="POST" action="/settings/note-lock-pin" class="space-y-3">
+          <input type="hidden" name="action" value="set" />
+          <% if (hasNoteLockPin) { %>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Current PIN</label>
+            <input type="password" name="currentPin" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="off"
+                   class="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white tracking-widest
+                          focus:outline-hidden focus:border-indigo-500" />
+          </div>
+          <% } %>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1"><%= hasNoteLockPin ? 'New PIN' : 'PIN' %> (4–6 digits)</label>
+            <input type="password" name="newPin" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password"
+                   class="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white tracking-widest
+                          focus:outline-hidden focus:border-indigo-500" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Confirm PIN</label>
+            <input type="password" name="confirmPin" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6" autocomplete="new-password"
+                   class="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white tracking-widest
+                          focus:outline-hidden focus:border-indigo-500" />
+          </div>
+          <div class="flex gap-2 items-center">
+            <button type="submit"
+                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+              <%= hasNoteLockPin ? 'Change PIN' : 'Set PIN' %>
+            </button>
+            <% if (hasNoteLockPin) { %>
+              <details class="inline-block">
+                <summary class="cursor-pointer text-xs text-gray-500 hover:text-red-400 transition-colors list-none">Remove PIN</summary>
+                <form method="POST" action="/settings/note-lock-pin" class="mt-2 flex gap-2 items-center">
+                  <input type="hidden" name="action" value="remove" />
+                  <input type="password" name="currentPin" inputmode="numeric" pattern="[0-9]{4,6}" minlength="4" maxlength="6"
+                         placeholder="Current PIN" required autocomplete="off"
+                         class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white w-32 tracking-widest focus:outline-hidden focus:border-red-500" />
+                  <button type="submit" class="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white text-xs rounded-lg transition-colors">Remove</button>
+                </form>
+              </details>
+            <% } %>
+          </div>
+        </form>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="bg-gray-900 border border-red-900/50 rounded-xl p-5 space-y-3">
+        <div>
+          <h2 class="text-sm font-semibold text-red-400">Danger Zone</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Permanently delete your account and all your data. This cannot be undone.</p>
+        </div>
+        <details class="group">
+          <summary class="cursor-pointer text-xs text-red-400 hover:text-red-300 transition-colors list-none flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                 class="w-3.5 h-3.5 transition-transform group-open:rotate-90">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+            Delete my account
+          </summary>
+          <form action="/settings/delete-account" method="POST" class="mt-3 space-y-3"
+                onsubmit="return confirm('This will permanently delete your account and ALL your data. Are you absolutely sure?')">
+            <p class="text-xs text-gray-500">Type your username <span class="font-mono text-gray-300"><%= currentUser.username %></span> to confirm.</p>
+            <input type="text" name="confirmUsername" required autocomplete="off"
+                   placeholder="<%= currentUser.username %>"
+                   class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-red-900 text-gray-100 placeholder-gray-600 text-sm
+                          focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:border-transparent" />
+            <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-medium transition-colors">
+              Permanently delete account
+            </button>
+          </form>
+        </details>
+      </div>
+
+    </div>
+
+  <!-- ── Modules ────────────────────────────────────────────────────── -->
+  <% } else if (tab === 'modules') { %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Modules</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Switch modules on or off. The sidebar groups them in a fixed order; the order of the phone's bottom bar is set in the iPhone app (Settings → Modules).</p>
+      </div>
+
+      <form method="POST" action="/settings/modules" id="modules-form" class="space-y-1">
+        <%# Today — always first, pinned %>
+        <% const dashboard = moduleList.find(m => m.key === 'dashboard'); %>
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800/40 opacity-60 select-none">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+               stroke="currentColor" class="w-4 h-4 text-gray-600 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          <span class="flex-1 text-sm text-white font-medium"><%= dashboard.label %></span>
+          <span class="text-xs text-gray-600">always on</span>
+        </div>
+
+        <%# The modules you can switch off, in the sidebar's order %>
+        <div id="sortable-modules" class="space-y-1">
+          <% moduleList.filter(m => !m.alwaysEnabled).forEach(m => { %>
+            <div class="module-row flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800"
+                 data-key="<%= m.key %>">
+              <span class="flex-1 text-sm text-white font-medium select-none"><%= m.label %></span>
+              <input type="checkbox" name="<%= m.key %>" value="on"
+                     <%= m.enabled ? 'checked' : '' %>
+                     class="w-4 h-4 rounded accent-indigo-500 shrink-0" />
+            </div>
+          <% }); %>
+        </div>
+
+        <%# Settings — always last, pinned %>
+        <% const settingsMod = moduleList.find(m => m.key === 'settings'); %>
+        <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800/40 opacity-60 select-none">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+               stroke="currentColor" class="w-4 h-4 text-gray-600 shrink-0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          <span class="flex-1 text-sm text-white font-medium"><%= settingsMod.label %></span>
+          <span class="text-xs text-gray-600">always on</span>
+        </div>
+
+        <button type="submit"
+                class="w-full mt-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+          Save modules
+        </button>
+      </form>
+    </div>
+
+
+  <!-- ── Notifications ─────────────────────────────────────────────── -->
+  <% } else if (tab === 'notifications') { %>
+
+    <% if (demoMode) { %>
+      <div class="mb-4 px-4 py-3 rounded-lg bg-amber-950 border border-amber-800 text-amber-300 text-sm">Calendar accounts and notification channels aren't available on the demo. Run your own Obelo server to connect them.</div>
+    <% } %>
+    <div class="<%= demoMode ? 'opacity-40 pointer-events-none' : '' %>" <%= demoMode ? 'inert' : '' %>>
+
+    <%
+      const digestCh   = notifMap.daily_digest?.channels   || {};
+      const slippingCh = notifMap.slipping_tasks?.channels || {};
+    %>
+    <form method="POST" action="/settings/notifications" class="space-y-4">
+
+      <!-- Delivery channels -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-5">
+        <h2 class="text-sm font-semibold text-white">Delivery channels</h2>
+
+        <!-- Pushover -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pushover</span>
+            <span class="text-[10px] text-gray-600">Native push via the Pushover app</span>
+          </div>
+          <input type="text" name="pushoverKey" value="<%= pushoverKey %>"
+                 placeholder="Paste your user key from pushover.net"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                        font-mono placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="pushoverEnabled" value="on"
+                   <%= pushoverEnabled ? 'checked' : '' %>
+                   class="w-4 h-4 rounded accent-indigo-500" />
+            <span class="text-sm text-gray-300">Enable Pushover</span>
+          </label>
+        </div>
+
+        <div class="border-t border-gray-800"></div>
+
+        <!-- ntfy -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">ntfy</span>
+            <span class="text-[10px] text-gray-600">Free push notifications via the ntfy app</span>
+          </div>
+          <% if (!ntfyConfigured) { %>
+            <p class="text-xs text-gray-500">ntfy isn't set up on this server. The server admin can enable it by setting <code>NTFY_URL</code> in <code>.env</code>.</p>
+          <% } else { %>
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="ntfyEnabled" value="on"
+                     <%= ntfyEnabled ? 'checked' : '' %>
+                     class="w-4 h-4 rounded accent-indigo-500" />
+              <span class="text-sm text-gray-300">Enable ntfy</span>
+            </label>
+            <% if (ntfyTopic) { %>
+              <div class="rounded-lg bg-gray-800/60 border border-gray-700 p-3 space-y-2 text-xs text-gray-400">
+                <p>In the ntfy app (iOS / Android), tap <strong>+</strong>, turn on <strong>Use another server</strong>, and enter:</p>
+                <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                  <span class="text-gray-500">Server</span><code class="text-gray-200 break-all"><%= ntfyServer %></code>
+                  <span class="text-gray-500">Topic</span><code class="text-gray-200 break-all select-all"><%= ntfyTopic %></code>
+                </div>
+                <p class="text-gray-500">Keep the topic private — anyone who knows it can read your notifications.</p>
+              </div>
+            <% } else { %>
+              <p class="text-xs text-gray-500">Turn this on and save to get your personal topic and subscribe instructions.</p>
+            <% } %>
+          <% } %>
+        </div>
+
+        <div class="border-t border-gray-800"></div>
+
+        <!-- Email -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</span>
+            <span class="text-[10px] text-gray-600">Sent via SMTP</span>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Delivery email address</label>
+            <input type="email" name="notifEmail" value="<%= notifEmail %>"
+                   placeholder="<%= userEmail ? userEmail + ' (profile default)' : 'you@example.com' %>"
+                   class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white
+                          placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+            <p class="text-xs text-gray-600 mt-1">
+              <% if (userEmail) { %>
+                Leave blank to use your profile email (<%= userEmail %>)
+              <% } else { %>
+                Or <a href="/settings?tab=account" class="text-indigo-400 hover:text-indigo-300">add an email to your profile</a> to use as the default
+              <% } %>
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Per-type prefs -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-6">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Notification types</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Reminders and routine alerts fire automatically at their scheduled times, to every push channel you've enabled above (Pushover and/or ntfy).</p>
+        </div>
+
+        <!-- Daily digest -->
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="digest_enabled" value="on"
+                   <%= notifMap.daily_digest?.enabled !== false ? 'checked' : '' %>
+                   class="w-4 h-4 rounded accent-indigo-500" />
+            <div>
+              <span class="text-sm text-gray-200 font-medium">Daily morning digest</span>
+              <p class="text-xs text-gray-500">Today's calendar events and top tasks</p>
+            </div>
+          </label>
+          <div class="pl-7 space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500">Send at</label>
+              <input type="time" name="digest_time"
+                     value="<%= notifMap.daily_digest?.sendTime || '08:00' %>"
+                     class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white
+                            focus:outline-hidden focus:border-indigo-500" />
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="digest_ch_pushover" value="on"
+                       <%= digestCh.pushover ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">Pushover</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="digest_ch_email" value="on"
+                       <%= digestCh.email ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">Email</span>
+              </label>
+              <% if (ntfyConfigured) { %>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="digest_ch_ntfy" value="on"
+                       <%= digestCh.ntfy ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">ntfy</span>
+              </label>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-800"></div>
+
+        <!-- Slipping tasks -->
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="slipping_enabled" value="on"
+                   <%= notifMap.slipping_tasks?.enabled !== false ? 'checked' : '' %>
+                   class="w-4 h-4 rounded accent-indigo-500" />
+            <div>
+              <span class="text-sm text-gray-200 font-medium">Slipping tasks alert</span>
+              <p class="text-xs text-gray-500">Monday morning summary of overdue tasks</p>
+            </div>
+          </label>
+          <div class="pl-7 space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500">Send at</label>
+              <input type="time" name="slipping_time"
+                     value="<%= notifMap.slipping_tasks?.sendTime || '09:00' %>"
+                     class="bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-sm text-white
+                            focus:outline-hidden focus:border-indigo-500" />
+            </div>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="slipping_ch_pushover" value="on"
+                       <%= slippingCh.pushover ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">Pushover</span>
+              </label>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="slipping_ch_email" value="on"
+                       <%= slippingCh.email ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">Email</span>
+              </label>
+              <% if (ntfyConfigured) { %>
+              <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" name="slipping_ch_ntfy" value="on"
+                       <%= slippingCh.ntfy ? 'checked' : '' %>
+                       class="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span class="text-xs text-gray-400">ntfy</span>
+              </label>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-800"></div>
+
+        <!-- Task & reminder due-time alerts -->
+        <%
+          const taskdueCh = notifMap.task_due?.channels || { pushover: true };
+        %>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" name="taskdue_enabled" value="on"
+                   <%= notifMap.task_due?.enabled !== false ? 'checked' : '' %>
+                   class="w-4 h-4 rounded accent-indigo-500" />
+            <div>
+              <span class="text-sm text-gray-200 font-medium">Task &amp; reminder alerts</span>
+              <p class="text-xs text-gray-500">15 min before, at the due time, and when overdue — for any task or reminder with a set time</p>
+            </div>
+          </label>
+          <div class="pl-7 flex items-center gap-4">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="taskdue_ch_pushover" value="on"
+                     <%= taskdueCh.pushover !== false ? 'checked' : '' %>
+                     class="w-3.5 h-3.5 rounded accent-indigo-500" />
+              <span class="text-xs text-gray-400">Pushover</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="taskdue_ch_email" value="on"
+                     <%= taskdueCh.email ? 'checked' : '' %>
+                     class="w-3.5 h-3.5 rounded accent-indigo-500" />
+              <span class="text-xs text-gray-400">Email</span>
+            </label>
+            <% if (ntfyConfigured) { %>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" name="taskdue_ch_ntfy" value="on"
+                     <%= taskdueCh.ntfy ? 'checked' : '' %>
+                     class="w-3.5 h-3.5 rounded accent-indigo-500" />
+              <span class="text-xs text-gray-400">ntfy</span>
+            </label>
+            <% } %>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit"
+              class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+        Save notification settings
+      </button>
+    </form>
+
+    <% if (ntfyConfigured && ntfyTopic) { %>
+    <div class="grid grid-cols-2 gap-2">
+      <form method="POST" action="/settings/notifications/ntfy-test">
+        <button type="submit"
+                class="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm rounded-lg transition-colors">
+          Send test ntfy notification
+        </button>
+      </form>
+      <form method="POST" action="/settings/notifications/ntfy-topic"
+            data-confirm="Create a new ntfy topic? You'll need to subscribe to the new one in the ntfy app; the old topic stops receiving notifications."
+            onsubmit="return confirm(this.dataset.confirm)">
+        <button type="submit"
+                class="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm rounded-lg transition-colors">
+          New ntfy topic
+        </button>
+      </form>
+    </div>
+    <% } %>
+
+    <form method="POST" action="/settings/notifications/test">
+      <button type="submit"
+              class="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 text-sm rounded-lg transition-colors">
+        Send test email
+      </button>
+    </form>
+
+    <!-- Links to module-specific sources -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-3">
+      <h2 class="text-sm font-semibold text-white">Connected Sources</h2>
+      <a href="/calendar/sources"
+         class="flex items-center justify-between p-3 rounded-lg bg-gray-800 hover:bg-gray-750 transition-colors">
+        <span class="text-sm text-gray-300">Calendar sources</span>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </a>
+    </div>
+
+  <!-- ── Appearance ─────────────────────────────────────────────────── -->
+    </div>
+
+  <% } else if (tab === 'appearance') { %>
+    <form method="POST" action="/settings/appearance" class="space-y-4" id="appearance-form">
+
+      <!-- Theme -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Theme</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Choose a color scheme for the app</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <% BUILT_IN_THEMES.forEach(t => { %>
+            <label class="cursor-pointer">
+              <input type="radio" name="theme" value="<%= t.id %>" class="sr-only theme-radio"
+                     <%= currentTheme === t.id ? 'checked' : '' %>>
+              <div class="theme-card flex flex-col gap-1.5 p-2.5 rounded-xl border transition-colors
+                          <%= currentTheme === t.id ? 'border-indigo-500 bg-indigo-950/20' : 'border-gray-700 hover:border-gray-600' %>">
+                <div class="rounded-lg overflow-hidden flex" style="height:50px;background:<%= t.preview.bg %>;border:1px solid <%= t.preview.border %>">
+                  <div class="shrink-0 flex flex-col pt-1.5 px-1 gap-0.5" style="width:26px;background:<%= t.preview.surface %>;border-right:1px solid <%= t.preview.border %>">
+                    <div class="rounded" style="height:4px;background:<%= t.preview.accent %>"></div>
+                    <div class="rounded" style="height:2.5px;background:<%= t.preview.border %>"></div>
+                    <div class="rounded" style="height:2.5px;background:<%= t.preview.border %>"></div>
+                  </div>
+                  <div class="flex-1 p-1.5 flex flex-col justify-between">
+                    <div>
+                      <div class="rounded mb-0.5" style="height:3.5px;width:70%;background:<%= t.preview.border %>"></div>
+                      <div class="rounded" style="height:2.5px;width:50%;background:<%= t.preview.border %>"></div>
+                    </div>
+                    <div class="rounded" style="height:9px;width:30px;background:<%= t.preview.accent %>"></div>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-[11px] font-semibold text-white"><%= t.label %></p>
+                  <p class="text-[10px] text-gray-500"><%= t.desc %></p>
+                </div>
+              </div>
+            </label>
+          <% }); %>
+
+          <!-- Custom -->
+          <label class="cursor-pointer">
+            <input type="radio" name="theme" value="custom" class="sr-only theme-radio"
+                   <%= currentTheme === 'custom' ? 'checked' : '' %>>
+            <div class="theme-card flex flex-col gap-1.5 p-2.5 rounded-xl border transition-colors
+                        <%= currentTheme === 'custom' ? 'border-indigo-500 bg-indigo-950/20' : 'border-gray-700 hover:border-gray-600' %>">
+              <div class="rounded-lg flex items-center justify-center gap-1" style="height:50px;background:#111827;border:1px solid #2a2a42">
+                <div class="w-4 h-4 rounded-full" style="background:<%= customAccent %>"></div>
+                <div class="w-3 h-3 rounded-full opacity-60" style="background:<%= customAccent %>"></div>
+                <div class="w-2 h-2 rounded-full opacity-30" style="background:<%= customAccent %>"></div>
+              </div>
+              <div>
+                <p class="text-[11px] font-semibold text-white">Custom</p>
+                <p class="text-[10px] text-gray-500">Pick your accent</p>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <!-- Status colours (visible only for the Catppuccin themes) -->
+        <div id="status-colors-options" class="<%= currentTheme.startsWith('ctp-') ? '' : 'hidden' %> pt-2 border-t border-gray-800 space-y-2">
+          <p class="text-xs font-medium text-gray-400 pt-1">Status colours</p>
+          <p class="text-[11px] text-gray-500">Priority dots, overdue, done and warnings</p>
+          <div class="flex items-center gap-5">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="statusColors" value="catppuccin" class="accent-indigo-500"
+                     <%= statusColors !== 'tailwind' ? 'checked' : '' %>>
+              <span class="text-xs text-gray-300">Catppuccin</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="statusColors" value="tailwind" class="accent-indigo-500"
+                     <%= statusColors === 'tailwind' ? 'checked' : '' %>>
+              <span class="text-xs text-gray-300">Classic (Tailwind)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Custom options (visible only when custom is selected) -->
+        <div id="custom-options" class="<%= currentTheme === 'custom' ? '' : 'hidden' %> pt-2 border-t border-gray-800 space-y-3">
+          <p class="text-xs font-medium text-gray-400 pt-1">Custom options</p>
+          <div class="flex items-center gap-5">
+            <span class="text-xs text-gray-500 w-10">Base</span>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="customBase" value="dark" class="accent-indigo-500"
+                     <%= customBase !== 'light' ? 'checked' : '' %>>
+              <span class="text-xs text-gray-300">Dark</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name="customBase" value="light" class="accent-indigo-500"
+                     <%= customBase === 'light' ? 'checked' : '' %>>
+              <span class="text-xs text-gray-300">Light</span>
+            </label>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-gray-500 w-10">Accent</span>
+            <input type="color" name="customAccent" id="custom-accent-input"
+                   value="<%= customAccent %>"
+                   class="h-8 w-14 rounded-lg border border-gray-700 cursor-pointer p-0.5 bg-transparent" />
+            <span class="text-xs font-mono text-gray-500" id="custom-accent-label"><%= customAccent %></span>
+          </div>
+          <p class="text-[10px] text-gray-600">Accent is used for buttons, active states, and focus rings.</p>
+        </div>
+      </div>
+
+
+      <button type="submit"
+              class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+        Save appearance
+      </button>
+    </form>
+
+  <!-- ── Notes ────────────────────────────────────────────────────── -->
+  <% } else if (tab === 'notes') { %>
+    <form method="POST" action="/settings/notes" class="space-y-4">
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Handwriting paper</h2>
+          <p class="text-xs text-gray-500 mt-0.5">The paper behind handwritten notes. The pen colours adjust to it, and drawings made on one paper read fine on the other.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <% [
+            { value: 'theme', label: 'Match theme', desc: 'Dark paper in dark themes, light paper in light themes' },
+            { value: 'dark',  label: 'Dark',        desc: 'Always dark paper with light ink' },
+            { value: 'white', label: 'White',       desc: 'Always white paper with dark ink' },
+          ].forEach(opt => { %>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="radio" name="notePaper" value="<%= opt.value %>"
+                     <%= notePaper === opt.value ? 'checked' : '' %>
+                     class="mt-0.5 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900">
+              <span>
+                <span class="block text-sm text-gray-200"><%= opt.label %></span>
+                <span class="block text-xs text-gray-500"><%= opt.desc %></span>
+              </span>
+            </label>
+          <% }); %>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-5">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Autosave</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Automatically save changes while editing a note</p>
+        </div>
+
+        <!-- Enable toggle -->
+        <label class="flex items-center justify-between cursor-pointer">
+          <span class="text-sm text-gray-300">Enable autosave</span>
+          <div class="relative">
+            <input type="checkbox" name="autosaveEnabled" id="autosaveEnabled"
+                   <%= autosaveEnabled ? 'checked' : '' %>
+                   class="sr-only peer"
+                   onchange="document.getElementById('autosave-duration-row').style.opacity = this.checked ? '1' : '0.4'">
+            <div class="w-10 h-6 rounded-full transition-colors bg-gray-700 peer-checked:bg-indigo-600"></div>
+            <div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4"></div>
+          </div>
+        </label>
+
+        <!-- Duration -->
+        <div id="autosave-duration-row" style="opacity: <%= autosaveEnabled ? '1' : '0.4' %>">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Save after</p>
+          <div class="flex flex-col gap-2">
+            <% [
+              { value: 'immediate', label: 'Immediate', desc: '1.5 seconds after last change' },
+              { value: '2min',      label: '2 minutes', desc: 'after last change' },
+              { value: '5min',      label: '5 minutes', desc: 'after last change' },
+            ].forEach(opt => { %>
+              <label class="flex items-start gap-3 cursor-pointer">
+                <input type="radio" name="autosaveDuration" value="<%= opt.value %>"
+                       <%= autosaveDuration === opt.value ? 'checked' : '' %>
+                       class="mt-0.5 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900">
+                <span>
+                  <span class="block text-sm text-gray-200"><%= opt.label %></span>
+                  <span class="block text-xs text-gray-500"><%= opt.desc %></span>
+                </span>
+              </label>
+            <% }); %>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit"
+              class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+        Save notes settings
+      </button>
+    </form>
+
+    <!-- Note templates: the person's own list, the same on the web and in the apps -->
+    <div class="mt-6 bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Note templates</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Starting points for new notes (+ Note). They are yours to edit, delete and add to, and the same list shows on the web, iPhone, iPad and Mac. You can also save an open note as a template from the Notes workspace.</p>
+      </div>
+      <% if (noteTemplates.length === 0) { %>
+        <p class="text-xs text-gray-600 italic">No templates. Add one below.</p>
+      <% } %>
+      <% noteTemplates.forEach(tpl => { %>
+        <details class="rounded-lg border border-gray-800">
+          <summary class="flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer text-sm text-gray-200 select-none">
+            <span class="truncate"><%= tpl.label %> <span class="text-xs text-gray-500">· <%= tpl.type %></span></span>
+            <span class="text-xs text-gray-500">Edit</span>
+          </summary>
+          <div class="p-4 border-t border-gray-800 space-y-3">
+            <form method="POST" action="/settings/note-templates/<%= tpl.id %>" class="space-y-3">
+              <%- include('_note-template-fields', { tpl }) %>
+              <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg">Save template</button>
+            </form>
+            <form method="POST" action="/settings/note-templates/<%= tpl.id %>/delete" onsubmit="return confirm('Delete this template?')">
+              <button type="submit" class="text-xs text-red-400 hover:text-red-300">Delete template</button>
+            </form>
+          </div>
+        </details>
+      <% }); %>
+      <details class="rounded-lg border border-dashed border-gray-700">
+        <summary class="px-4 py-2.5 cursor-pointer text-sm text-indigo-400 select-none">New template</summary>
+        <form method="POST" action="/settings/note-templates" class="p-4 border-t border-gray-800 space-y-3">
+          <%- include('_note-template-fields', { tpl: { label: '', type: 'note', title: '', dateTitle: false, content: '' } }) %>
+          <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-lg">Add template</button>
+        </form>
+      </details>
+    </div>
+
+  <!-- ── Dashboard ──────────────────────────────────────────────────── -->
+  <% } else if (tab === 'dashboard') { %>
+    <%
+      const DASH_WIDGETS = [
+        { key: 'focus',      label: 'My Focus',             desc: 'Tasks set to "Today" status' },
+        { key: 'calendar',   label: 'Calendar',             desc: "Today's events from your calendars" },
+        { key: 'due_items',  label: 'Due Today & Overdue',  desc: 'Open tasks and reminders that are due' },
+        { key: 'routines',   label: 'Routines',             desc: "Today's habits and streaks" },
+        { key: 'resurfaced', label: 'Resurfacing',          desc: 'A past note surfaced daily for reflection' },
+        { key: 'review',     label: 'Needs Review',         desc: 'Notes flagged for review' },
+      ];
+      const savedWidgets = (currentUser.preferences && currentUser.preferences.dashboardWidgets) || [];
+      const savedMap = Object.fromEntries(savedWidgets.map(w => [w.key, w]));
+      const orderedWidgets = [
+        ...savedWidgets.map(w => DASH_WIDGETS.find(d => d.key === w.key)).filter(Boolean),
+        ...DASH_WIDGETS.filter(d => !savedMap[d.key]),
+      ];
+    %>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div class="mb-4">
+        <h2 class="text-sm font-semibold text-white">Dashboard Widgets</h2>
+        <p class="text-xs text-gray-500 mt-0.5">Drag to reorder. Toggle to show or hide.</p>
+      </div>
+      <form method="POST" action="/settings/dashboard">
+        <input type="hidden" name="order" id="dash-order-input" />
+        <div id="sortable-widgets" class="space-y-1 mb-4">
+          <% orderedWidgets.forEach(w => { %>
+            <% const saved = savedMap[w.key]; %>
+            <% const enabled = saved ? saved.enabled : true; %>
+            <div class="widget-row flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800 border border-gray-700 cursor-grab active:cursor-grabbing"
+                 data-key="<%= w.key %>">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16" fill="currentColor"
+                   class="w-2.5 h-4 text-gray-600 shrink-0 drag-handle touch-none cursor-grab active:cursor-grabbing">
+                <circle cx="2.5" cy="2" r="1.5"/><circle cx="7.5" cy="2" r="1.5"/>
+                <circle cx="2.5" cy="8" r="1.5"/><circle cx="7.5" cy="8" r="1.5"/>
+                <circle cx="2.5" cy="14" r="1.5"/><circle cx="7.5" cy="14" r="1.5"/>
+              </svg>
+              <label class="flex items-center gap-3 flex-1 cursor-pointer">
+                <input type="checkbox" name="<%= w.key %>" <%= enabled ? 'checked' : '' %>
+                       class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-500 focus:ring-indigo-500" />
+                <div>
+                  <p class="text-sm font-medium text-gray-200"><%= w.label %></p>
+                  <p class="text-xs text-gray-600"><%= w.desc %></p>
+                </div>
+              </label>
+            </div>
+          <% }); %>
+        </div>
+        <button type="submit"
+                class="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg transition-colors">
+          Save dashboard
+        </button>
+      </form>
+    </div>
+
+    <script src="/js/sortable.min.js"></script>
+    <script>
+      function getDashOrder() {
+        return [...document.querySelectorAll('#sortable-widgets .widget-row')].map(el => el.dataset.key);
+      }
+      document.getElementById('dash-order-input').value = JSON.stringify(getDashOrder());
+      Sortable.create(document.getElementById('sortable-widgets'), {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: () => { document.getElementById('dash-order-input').value = JSON.stringify(getDashOrder()); },
+      });
+    </script>
+  <!-- ── Data ─────────────────────────────────────────────────────────── -->
+  <% } else if (tab === 'data') { %>
+    <div class="space-y-3">
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-white mb-0.5">Export your data</h2>
+        <p class="text-xs text-gray-500 mb-5">Your data belongs to you. Download it anytime in open formats.</p>
+
+        <div class="space-y-2">
+
+          <!-- Full JSON -->
+          <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+            <div>
+              <p class="text-sm font-medium text-gray-200">Full data export</p>
+              <p class="text-xs text-gray-500 mt-0.5">Everything — notes, tasks, reminders, routines, lists, bookmarks</p>
+            </div>
+            <a href="/settings/export/json"
+               class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+              JSON
+            </a>
+          </div>
+
+          <!-- Tasks CSV -->
+          <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+            <div>
+              <p class="text-sm font-medium text-gray-200">Tasks</p>
+              <p class="text-xs text-gray-500 mt-0.5">Title, status, priority, due date, tags, notes</p>
+            </div>
+            <a href="/settings/export/tasks.csv"
+               class="shrink-0 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-medium transition-colors">
+              CSV
+            </a>
+          </div>
+
+          <!-- Notes JSON -->
+          <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+            <div>
+              <p class="text-sm font-medium text-gray-200">Notes</p>
+              <p class="text-xs text-gray-500 mt-0.5">All notes with markdown content, tags, and metadata</p>
+            </div>
+            <a href="/settings/export/notes.json"
+               class="shrink-0 px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-medium transition-colors">
+              JSON
+            </a>
+          </div>
+
+          <!-- Bookmarks -->
+          <div class="flex items-center justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+            <div>
+              <p class="text-sm font-medium text-gray-200">Bookmarks</p>
+              <p class="text-xs text-gray-500 mt-0.5">Spreadsheet-friendly CSV, or HTML to import into any browser</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <a href="/settings/export/bookmarks.csv"
+                 class="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-medium transition-colors">
+                CSV
+              </a>
+              <a href="/settings/export/bookmarks.html"
+                 class="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs font-medium transition-colors">
+                Browser import
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Import -->
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 class="text-sm font-semibold text-white mb-0.5">Import data</h2>
+        <p class="text-xs text-gray-500 mb-5">Migrate from other tools or restore a previous export.</p>
+
+        <div class="space-y-4">
+
+          <!-- Markdown notes -->
+          <form action="/settings/import/notes" method="POST" enctype="multipart/form-data">
+            <div class="flex items-start justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-200">Notes from Markdown</p>
+                <p class="text-xs text-gray-500 mt-0.5 mb-2">
+                  .md files — filename becomes the title. YAML frontmatter
+                  <code class="text-gray-400">title:</code> and <code class="text-gray-400">tags:</code> are parsed automatically.
+                </p>
+                <input type="file" name="files" accept=".md,text/markdown" multiple required
+                       class="text-xs text-gray-400 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0
+                              file:text-xs file:font-medium file:bg-gray-700 file:text-gray-200
+                              hover:file:bg-gray-600 file:cursor-pointer" />
+              </div>
+              <button type="submit"
+                      class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+                Import
+              </button>
+            </div>
+          </form>
+
+          <!-- Tasks CSV -->
+          <form action="/settings/import/tasks" method="POST" enctype="multipart/form-data">
+            <div class="flex items-start justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-200">Tasks from CSV</p>
+                <p class="text-xs text-gray-500 mt-0.5 mb-2">
+                  Requires a <code class="text-gray-400">title</code> column. Optional:
+                  status, priority, due date, due time, tags, notes.
+                  Column names are matched flexibly.
+                </p>
+                <input type="file" name="file" accept=".csv,text/csv" required
+                       class="text-xs text-gray-400 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0
+                              file:text-xs file:font-medium file:bg-gray-700 file:text-gray-200
+                              hover:file:bg-gray-600 file:cursor-pointer" />
+              </div>
+              <button type="submit"
+                      class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+                Import
+              </button>
+            </div>
+          </form>
+
+          <!-- Full JSON restore -->
+          <form action="/settings/import/json" method="POST" enctype="multipart/form-data">
+            <div class="flex items-start justify-between gap-4 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700">
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-200">Restore from JSON export</p>
+                <p class="text-xs text-gray-500 mt-0.5 mb-2">
+                  Import a Obelo JSON export. Notes, tasks, and bookmarks are added
+                  alongside existing data — nothing is overwritten.
+                </p>
+                <input type="file" name="file" accept=".json,application/json" required
+                       class="text-xs text-gray-400 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0
+                              file:text-xs file:font-medium file:bg-gray-700 file:text-gray-200
+                              hover:file:bg-gray-600 file:cursor-pointer" />
+              </div>
+              <button type="submit"
+                      class="shrink-0 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+                Import
+              </button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+
+    </div>
+  <% } else if (tab === 'shortcuts') { %>
+
+    <!-- ── Shortcuts (iOS Shortcut capture) ──────────────────────────── -->
+    <div class="space-y-4">
+
+      <% if (newToken) { %>
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5 space-y-3">
+          <p class="text-sm font-semibold text-amber-300">Save this token now. It will not be shown again.</p>
+          <p class="text-xs text-gray-400">Token label: <strong class="text-amber-300"><%= newTokenLabel %></strong></p>
+          <div class="flex items-center gap-2">
+            <code id="newTokenVal" class="flex-1 break-all text-xs bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-green-300 font-mono"><%= newToken %></code>
+            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('newTokenVal').textContent.trim())"
+                    class="shrink-0 text-xs px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium">Copy</button>
+          </div>
+          <p class="text-xs text-gray-500">Treat this like a password. Anyone with this token can add items to your account.</p>
+        </div>
+      <% } %>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">API tokens</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Used by iOS Shortcuts to send captures to your account.</p>
+        </div>
+
+        <% if (apiTokens.length === 0) { %>
+          <p class="text-xs text-gray-600 italic">No tokens yet. Create one below to use in your Shortcut.</p>
+        <% } else { %>
+          <ul class="divide-y divide-gray-800">
+            <% apiTokens.forEach(t => { %>
+              <li class="flex items-center justify-between gap-3 py-2.5">
+                <div class="min-w-0">
+                  <p class="text-sm text-gray-200 truncate"><%= t.label %></p>
+                  <p class="text-xs text-gray-600">
+                    Created <%= new Date(t.createdAt).toLocaleDateString() %>
+                    <% if (t.lastUsed) { %> · last used <%= new Date(t.lastUsed).toLocaleDateString() %><% } %>
+                  </p>
+                </div>
+                <form method="POST" action="/settings/api-tokens/<%= t.id %>/delete"
+                      onsubmit="return confirm('Revoke this token? Any Shortcut using it will stop working.')">
+                  <button type="submit" class="text-xs px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400">Revoke</button>
+                </form>
+              </li>
+            <% }); %>
+          </ul>
+        <% } %>
+
+        <form method="POST" action="/settings/api-tokens" class="flex gap-2">
+          <input type="text" name="label" placeholder="Token label (e.g. iPhone Shortcut)"
+                 class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500">
+          <button type="submit" class="shrink-0 text-xs px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Create token</button>
+        </form>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-2">
+        <h2 class="text-sm font-semibold text-white">Capture from iOS Shortcuts</h2>
+        <p class="text-xs text-gray-500">
+          Send <code class="text-indigo-300">POST <%= appUrl %>/capture/api</code> with the header
+          <code class="text-indigo-300">Authorization: Bearer &lt;your-token&gt;</code> and the JSON body
+          <code class="text-indigo-300">{ "raw": "call the dentist tuesday 3pm" }</code>.
+          The response is a draft to confirm in the app. The README has the full setup.
+        </p>
+      </div>
+    </div>
+
+  <% } else if (tab === 'tags') { %>
+
+    <!-- ── Tags ───────────────────────────────────────────────────── -->
+    <div class="space-y-4">
+
+      <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h2 class="text-sm font-semibold text-white">Tag Manager</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Tags are shared across Notes, Tasks, Reminders, Routines, and Bookmarks. Renaming or deleting a tag updates every item that uses it.</p>
+        </div>
+
+        <%
+          const tagNames = Object.keys(tagCounts).sort();
+        %>
+
+        <% if (tagNames.length === 0) { %>
+          <p class="text-sm text-gray-500 py-4 text-center">No tags yet. Add tags when creating or editing Notes, Tasks, Reminders, Routines, or Bookmarks.</p>
+        <% } else { %>
+          <div class="space-y-2">
+            <% tagNames.forEach(tag => { %>
+              <div class="flex items-center gap-3 py-2 border-b border-gray-800 last:border-0">
+
+                <!-- Inline rename form -->
+                <form method="POST" action="/settings/tags/rename" class="flex items-center gap-2 flex-1 min-w-0">
+                  <input type="hidden" name="oldName" value="<%= tag %>">
+                  <span class="text-indigo-400 text-sm shrink-0">#</span>
+                  <input type="text" name="newName" value="<%= tag %>"
+                         class="flex-1 min-w-0 bg-transparent border-b border-transparent hover:border-gray-700 focus:border-indigo-500 text-gray-200 text-sm px-0 py-0.5 focus:outline-hidden transition-colors"
+                         required>
+                  <button type="submit"
+                          class="text-xs text-gray-500 hover:text-gray-200 shrink-0 transition-colors px-1 py-0.5 rounded hover:bg-gray-800">
+                    Rename
+                  </button>
+                </form>
+
+                <!-- Usage count -->
+                <span class="text-xs text-gray-600 shrink-0 w-16 text-right">
+                  <%= tagCounts[tag] %> item<%= tagCounts[tag] !== 1 ? 's' : '' %>
+                </span>
+
+                <!-- Delete form -->
+                <form method="POST" action="/settings/tags/delete"
+                      data-confirm="Delete tag &quot;<%= tag %>&quot; from all <%= tagCounts[tag] %> item<%= tagCounts[tag] !== 1 ? 's' : '' %>?"
+                      onsubmit="return confirm(this.dataset.confirm)">
+                  <input type="hidden" name="name" value="<%= tag %>">
+                  <button type="submit"
+                          class="text-xs text-red-600 hover:text-red-400 transition-colors px-1 py-0.5 rounded hover:bg-red-950">
+                    Delete
+                  </button>
+                </form>
+
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+
+        <!-- Create new tag -->
+        <div class="border-t border-gray-800 pt-4">
+          <p class="text-xs text-gray-500 mb-3">Create a new tag — it will appear as a suggestion in all modules:</p>
+          <form method="POST" action="/settings/tags/create" class="flex items-center gap-3">
+            <input type="text" name="name"
+                   placeholder="new-tag-name"
+                   class="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                   required>
+            <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors shrink-0">
+              Create tag
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  <% } %>
+
+</div>
+
+<script>
+// ── Theme picker ───────────────────────────────────────────────────────────
+const DARK_THEMES = new Set(<%- JSON.stringify(BUILT_IN_THEMES.filter(t => t.isDark).map(t => t.id)) %>);
+function themeIsDark(t) {
+  if (t === 'custom') return document.querySelector('input[name="customBase"]:checked')?.value !== 'light';
+  return DARK_THEMES.has(t);
+}
+document.querySelectorAll('.theme-radio').forEach(radio => {
+  radio.addEventListener('change', function() {
+    const theme = this.value;
+    const dark = themeIsDark(theme);
+    document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.setAttribute('data-theme', theme);
+    // Update card borders
+    document.querySelectorAll('.theme-card').forEach(card => {
+      const inp = card.closest('label')?.querySelector('input');
+      const sel = inp?.checked;
+      card.classList.toggle('border-indigo-500', !!sel);
+      card.classList.toggle('bg-indigo-950/20', !!sel);
+      card.classList.toggle('border-gray-700', !sel);
+    });
+    // Custom options visibility
+    document.getElementById('custom-options')?.classList.toggle('hidden', theme !== 'custom');
+    document.getElementById('status-colors-options')?.classList.toggle('hidden', !theme.startsWith('ctp-'));
+    if (theme === 'custom') applyLiveAccent();
+  });
+});
+
+// ── Status colours: preview straight away ──────────────────────────────────
+document.querySelectorAll('input[name="statusColors"]').forEach(radio => {
+  radio.addEventListener('change', function() { document.documentElement.dataset.statusColors = this.value; });
+});
+
+// ── Custom base toggle ─────────────────────────────────────────────────────
+document.querySelectorAll('input[name="customBase"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (document.querySelector('.theme-radio:checked')?.value === 'custom') {
+      document.documentElement.classList.toggle('dark', this.value !== 'light');
+      applyLiveAccent();
+    }
+  });
+});
+
+// ── Custom accent live preview ─────────────────────────────────────────────
+function adjHex(hex, d) {
+  const c = hex.slice(1);
+  const cl = v => Math.min(255, Math.max(0, v));
+  return '#' + [0,2,4].map(i => cl(parseInt(c.slice(i,i+2),16)+d).toString(16).padStart(2,'0')).join('');
+}
+function applyLiveAccent() {
+  const hex = document.getElementById('custom-accent-input')?.value || '#6366f1';
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return;
+  const dark = themeIsDark('custom');
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const vars = `--ca:${hex};--ca-hover:${adjHex(hex,dark?25:-20)};--ca-dark:${adjHex(hex,-35)};--ca-light:${adjHex(hex,dark?70:-15)};--ca-muted:${adjHex(hex,dark?100:-35)};--ca-r:${r};--ca-g:${g};--ca-b:${b}`;
+  const html = document.documentElement;
+  let s = html.getAttribute('style') || '';
+  s = s.replace(/--ca[^;]*(;|$)/g, '');
+  html.setAttribute('style', s + ';' + vars);
+}
+const accentEl = document.getElementById('custom-accent-input');
+if (accentEl) {
+  accentEl.addEventListener('input', function() {
+    document.getElementById('custom-accent-label').textContent = this.value;
+    applyLiveAccent();
+  });
+  if (document.querySelector('.theme-radio:checked')?.value === 'custom') applyLiveAccent();
+}
+</script>

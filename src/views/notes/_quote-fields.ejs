@@ -1,0 +1,20 @@
+<% const formAttr = (typeof formId !== 'undefined' && formId) ? ' form="' + formId + '"' : ''; %>
+    <!-- Quote fields (source / author) — hidden unless type = quote -->
+    <div id="quote-fields" class="space-y-4" style="display:none">
+      <div>
+        <label for="author" class="block text-sm font-medium text-gray-400 mb-1.5">Author</label>
+        <input type="text" id="author" name="author"<%- formAttr %>
+               value="<%= note && note.author ? note.author : '' %>"
+               class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm
+                      focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+               placeholder="Author name" />
+      </div>
+      <div>
+        <label for="source" class="block text-sm font-medium text-gray-400 mb-1.5">Source</label>
+        <input type="text" id="source" name="source"<%- formAttr %>
+               value="<%= note && note.source ? note.source : '' %>"
+               class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm
+                      focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+               placeholder="Book, article, or URL" />
+      </div>
+    </div>

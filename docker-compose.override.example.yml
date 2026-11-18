@@ -1,0 +1,26 @@
+# Optional, host-specific settings. Copy to docker-compose.override.yml (git-ignored), which
+# `docker compose` merges over docker-compose.yml automatically:
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+#
+# This example runs Obelo behind a Cloudflare Tunnel connector (cloudflared) on the same
+# host. cloudflared joins a shared Docker network named "tunnel" and reaches the app there as
+# http://obelo:3000, so the app's published port is only needed from the host itself.
+# One-time setup:
+#   docker network create tunnel      # and attach your cloudflared container to it
+#   APP_PORT=127.0.0.1:3001           # in .env: publish the port on localhost only
+# Then route the tunnel's public hostname to http://obelo:3000.
+
+services:
+  app:
+    # Optional: Dockhand (Docker update manager) can't check a locally built image for
+    # updates, so tell it to skip this one.
+    labels:
+      dockhand.update: "false"
+    networks:
+      default:            # keeps the app on the project network, where the db is
+      tunnel:
+        aliases: [obelo]
+
+networks:
+  tunnel:
+    external: true        # created once with `docker network create tunnel`, not by this project

@@ -1,0 +1,582 @@
+<%
+  const openId = note ? note.id : '';
+  const rowPad = (depth) => 8 + depth * 14;
+%>
+<!-- Three panes: folder tree, the open note, and its details. On small screens the tree is a
+     drawer and the details sit below the note. -->
+<div class="relative flex h-[calc(100vh-7rem)] bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+
+  <!-- ── Folder tree ──────────────────────────────────────────────────── -->
+  <!-- On small screens the tree is positioned inside this box, so it never covers the top bar -->
+  <aside id="ws-tree"
+         class="absolute inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-gray-900 border-r border-gray-800 flex flex-col
+                -translate-x-full transition-transform lg:static lg:translate-x-0 lg:w-64 lg:z-auto">
+    <div class="p-3 space-y-2 border-b border-gray-800">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <h1 class="text-sm font-semibold text-white">Notes</h1>
+        </div>
+        <div class="flex shrink-0 gap-1.5">
+          <button type="button" onclick="obeloAct('/notes/workspace/folders', { name: obeloAsk('New folder name') })"
+                  class="text-xs whitespace-nowrap px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">+ Folder</button>
+          <div class="relative" data-note-menu>
+            <button type="button" data-note-menu-toggle class="text-xs whitespace-nowrap px-2 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">+ Note ▾</button>
+            <div data-note-menu-panel class="hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-lg bg-gray-900 border border-gray-700 shadow-xl py-1">
+              <form method="POST" action="/notes/workspace/new" class="m-0 flex flex-col">
+                <input type="hidden" name="folderId" value="">
+                <button type="submit" name="template" value="" class="block w-full text-left px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800">Blank note</button>
+                <% noteTemplates.forEach(t => { %>
+                  <button type="submit" name="template" value="<%= t.key %>" class="block w-full text-left px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800"><%= t.label %></button>
+                <% }); %>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <form method="GET" action="/notes/workspace" class="space-y-2">
+        <input type="search" name="search" value="<%= search %>" placeholder="Search notes"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500">
+        <% if (tag) { %><input type="hidden" name="tag" value="<%= tag %>"><% } %>
+        <div class="flex gap-1.5">
+          <select name="filter" onchange="this.form.submit()" aria-label="Show"
+                  class="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-gray-200 focus:outline-none focus:border-indigo-500">
+            <option value="">All notes</option>
+            <option value="note" <%= filter === 'note' ? 'selected' : '' %>>Notes</option>
+            <option value="journal" <%= filter === 'journal' ? 'selected' : '' %>>Journal</option>
+            <option value="quote" <%= filter === 'quote' ? 'selected' : '' %>>Quotes</option>
+            <option value="flagged" <%= filter === 'flagged' ? 'selected' : '' %>>Flagged (<%= flaggedCount %>)</option>
+            <option value="slipping" <%= filter === 'slipping' ? 'selected' : '' %>>Slipping (<%= slippingCount %>)</option>
+          </select>
+          <button type="button" id="ws-select-toggle" class="text-xs px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Select</button>
+        </div>
+      </form>
+      <% if (tag) { %>
+        <p class="text-xs text-gray-500">Tagged #<%= tag %> · <a href="/notes/workspace" class="text-indigo-400 hover:text-indigo-300">clear</a></p>
+      <% } %>
+      <% if (filter === 'slipping') { %>
+        <p class="text-xs text-gray-500">Notes you haven't touched in a while, oldest first.</p>
+      <% } %>
+    </div>
+
+    <!-- Pinned notes stay put above the scrolling tree -->
+    <% if (pinned.length) { %>
+      <div class="shrink-0 border-b border-gray-800 py-1">
+        <div class="px-3 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-amber-400/80">Pinned</div>
+        <div class="max-h-[30vh] overflow-y-auto pb-1">
+          <% pinned.forEach(n => { %>
+            <a href="/notes/workspace?id=<%= n.id %>" draggable="true" data-note-id="<%= n.id %>"
+               class="block pl-6 pr-3 py-1 text-sm truncate mx-1 rounded-md
+                      <%= note && note.id === n.id ? 'bg-indigo-600/20 text-white' : 'text-gray-300 hover:bg-gray-800/60 hover:text-gray-100' %>">
+              <%= n.title %>
+              <% if (n.locked) { %><span class="text-gray-600 text-xs"> 🔒</span><% } %>
+            </a>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="overflow-y-auto flex-1 py-1" id="ws-tree-rows">
+      <% if (filtered) { %>
+        <% if (list.length === 0) { %>
+          <p class="text-sm text-gray-600 text-center py-10">No notes match this filter.</p>
+        <% } %>
+        <% list.forEach(n => { %>
+          <a href="/notes/workspace?id=<%= n.id %>&search=<%= encodeURIComponent(search) %><%= tag ? '&tag=' + encodeURIComponent(tag) : '' %><%= filter ? '&filter=' + filter : '' %>"
+             draggable="true" data-note-id="<%= n.id %>"
+             class="block px-3 py-1.5 text-sm truncate <%= note && note.id === n.id ? 'bg-indigo-600/15 text-white' : 'text-gray-300 hover:bg-gray-800/60' %>">
+            <% if (n.pinned) { %><span class="text-amber-400 text-xs">● </span><% } %><%= n.title %>
+          </a>
+        <% }); %>
+      <% } else { %>
+        <% tree.forEach(row => { %>
+          <% if (row.kind === 'folder') { %>
+            <div data-drop data-folder-id="<%= row.id %>" data-ancestors="<%= row.ancestors.join(' ') %>"
+                 style="padding-left: <%= rowPad(row.depth) %>px"
+                 class="flex items-center gap-1 pr-2 py-1 text-sm text-gray-200 rounded-md mx-1">
+              <button type="button" data-toggle-folder="<%= row.id %>" aria-expanded="true" title="Collapse or expand"
+                      class="text-gray-500 hover:text-gray-200 text-xs w-4 shrink-0">▾</button>
+              <span class="flex-1 min-w-0 truncate font-medium"><%= row.name %></span>
+              <span class="flex gap-1 text-gray-500">
+                <button type="button" title="New subfolder" onclick="obeloAct('/notes/workspace/folders', { name: obeloAsk('Subfolder name'), parentId: '<%= row.id %>' })"
+                        class="text-xs hover:text-gray-200 px-1">+</button>
+                <button type="button" title="Rename" onclick="obeloAct('/notes/workspace/folders/<%= row.id %>/rename', { name: obeloAsk('Folder name', '<%= row.name.replace(/'/g, '') %>') })"
+                        class="text-xs hover:text-gray-200 px-1">✎</button>
+                <button type="button" title="Delete folder (contents move up)" onclick="obeloDeleteFolder(<%= row.id %>)"
+                        class="text-xs hover:text-red-400 px-1">×</button>
+              </span>
+            </div>
+          <% } else { %>
+            <% const n = row.note; %>
+            <a href="/notes/workspace?id=<%= n.id %>" draggable="true" data-note-id="<%= n.id %>"
+               data-ancestors="<%= row.ancestors.join(' ') %>"
+               style="padding-left: <%= rowPad(row.depth) + 12 %>px"
+               class="block pr-3 py-1 text-sm truncate mx-1 rounded-md
+                      <%= note && note.id === n.id ? 'bg-indigo-600/20 text-white' : 'text-gray-400 hover:bg-gray-800/60 hover:text-gray-200' %>">
+              <% if (n.pinned) { %><span class="text-amber-400 text-xs">● </span><% } %><%= n.title %>
+              <% if (n.locked) { %><span class="text-gray-600 text-xs"> 🔒</span><% } %>
+            </a>
+          <% } %>
+        <% }); %>
+        <% if (tree.length === 0) { %>
+          <p class="text-sm text-gray-600 text-center py-10">No notes yet.</p>
+        <% } %>
+        <!-- Dropping a note here moves it to the top level -->
+        <div data-drop data-folder-id="" class="mx-2 mt-3 mb-2 py-2 text-center text-xs text-gray-600 rounded-md border border-dashed border-gray-800">
+          Top level
+        </div>
+      <% } %>
+    </div>
+    <!-- Bulk bar: shown in select mode -->
+    <div id="ws-bulk-bar" class="hidden shrink-0 border-t border-gray-800 p-2 space-y-1.5 bg-gray-900">
+      <p class="text-xs text-indigo-300"><span id="ws-bulk-count">0</span> selected</p>
+      <div class="flex gap-1.5">
+        <select id="ws-bulk-action" class="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-gray-200">
+          <option value="delete">Delete</option>
+          <option value="pin">Pin</option>
+          <option value="unpin">Unpin</option>
+          <option value="flag">Flag for review</option>
+          <option value="unflag">Unflag</option>
+          <option value="add-tags">Add tags</option>
+          <option value="remove-tags">Remove tags</option>
+        </select>
+        <button type="button" id="ws-bulk-apply" class="text-xs px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Apply</button>
+      </div>
+      <input id="ws-bulk-tags" type="text" placeholder="tag1, tag2…" class="hidden w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white placeholder-gray-600">
+    </div>
+  </aside>
+
+  <!-- ── Open note ────────────────────────────────────────────────────── -->
+  <section class="flex-1 min-w-0 flex flex-col">
+
+    <% if (state === 'empty') { %>
+      <div class="flex-1 flex flex-col items-center justify-center gap-3 p-10 text-center">
+        <button type="button" onclick="document.getElementById('ws-tree').classList.remove('-translate-x-full')" class="lg:hidden text-xs text-indigo-400">Show folders</button>
+        <p class="text-sm text-gray-500">Pick a note from the tree, or start a new one.</p>
+        <form method="POST" action="/notes/workspace/new">
+          <button type="submit" class="text-xs px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">New note</button>
+        </form>
+      </div>
+
+    <% } else if (state === 'locked') { %>
+      <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-800">
+        <button type="button" onclick="document.getElementById('ws-tree').classList.toggle('-translate-x-full')" class="lg:hidden text-xs px-2 py-1 rounded-lg bg-gray-800 text-gray-200">Folders</button>
+        <p class="text-sm font-semibold text-white truncate"><%= note.title %></p>
+      </div>
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 p-10 text-center">
+        <p class="text-sm text-gray-400">This note is locked. Enter your PIN to edit it.</p>
+        <form method="POST" action="/notes/workspace/<%= note.id %>/unlock" class="flex gap-2">
+          <input type="password" name="pin" inputmode="numeric" autocomplete="off" required placeholder="PIN"
+                 class="w-32 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <button type="submit" class="text-xs px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Unlock</button>
+        </form>
+        <% if (lockError) { %><p class="text-xs text-red-400"><%= lockError %></p><% } %>
+      </div>
+
+    <% } else { %>
+      <!-- Header: title and status. The title belongs to the autosave form (form="ws-form"). -->
+      <div class="flex items-center gap-3 px-4 py-3 border-b border-gray-800">
+        <button type="button" onclick="document.getElementById('ws-tree').classList.toggle('-translate-x-full')" class="lg:hidden text-xs px-2 py-1 rounded-lg bg-gray-800 text-gray-200">Folders</button>
+        <input type="text" name="title" form="ws-form" value="<%= note.title %>" required
+               class="flex-1 min-w-0 bg-transparent text-lg font-semibold text-white placeholder-gray-600 focus:outline-none">
+        <span id="ws-status" class="text-xs text-gray-500 shrink-0"></span>
+      </div>
+
+      <div class="flex-1 min-h-0 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden">
+
+        <!-- Editor. Autosaves through POST /notes/:id, which overwrites every field it receives, so
+             the autosave form carries every field the note has (the details panel uses form="ws-form"). -->
+        <form id="ws-form" method="POST" action="/notes/<%= note.id %>" class="flex-1 min-w-0 min-h-[60vh] xl:min-h-0 flex flex-col xl:overflow-y-auto">
+          <!-- The same editor as the classic note form: Text/Draw, toolbar, Write/Preview -->
+          <div class="px-4 pt-3 pb-4 flex-1 flex flex-col">
+            <%- include('_editor', { editorText: content }) %>
+          </div>
+        </form>
+
+        <!-- Details -->
+        <aside class="xl:w-80 shrink-0 border-t xl:border-t-0 xl:border-l border-gray-800 overflow-y-auto p-4 space-y-5 text-sm">
+
+          <div class="space-y-3">
+            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Details</h2>
+            <label class="block text-xs text-gray-500">Folder
+              <select id="ws-folder" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none">
+                <option value="">Top level</option>
+                <% folders.forEach(f => { %>
+                  <option value="<%= f.id %>" <%= note.folderId === f.id ? 'selected' : '' %>><%= f.path %></option>
+                <% }); %>
+              </select>
+            </label>
+            <%- include('_type-selector', { formId: 'ws-form' }) %>
+            <%- include('_quote-fields', { formId: 'ws-form' }) %>
+            <%- include('_tag-picker', { allTags: tagList, selectedTags: note.tags, formId: 'ws-form' }) %>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-400">
+              <label class="flex items-center gap-1.5"><input type="checkbox" name="pinned" form="ws-form" <%= note.pinned ? 'checked' : '' %>> Pinned</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" name="private" form="ws-form" <%= note.private ? 'checked' : '' %>> Private</label>
+              <label class="flex items-center gap-1.5"><input type="checkbox" name="flaggedForReview" id="flagCheck" form="ws-form" <%= note.flaggedForReview ? 'checked' : '' %>> Flag for review</label>
+            </div>
+            <div id="review-date-field" class="pl-1" style="display:none">
+              <label class="block text-xs text-gray-500">Review on
+                <input type="date" name="reviewDate" form="ws-form" value="<%= note.reviewDate ? new Date(note.reviewDate).toISOString().slice(0, 10) : '' %>"
+                       class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-gray-200 focus:outline-none">
+              </label>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <% if (!note.locked && !note.hasDrawing) { %>
+              <button type="button" onclick="obeloAct('/notes/workspace/<%= note.id %>/save-as-template', { name: obeloAsk('Template name', '<%= note.title.replace(/[\\'\r\n]/g, '') %>') })"
+                      class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Save as template</button>
+            <% } %>
+            <% if (note.locked) { %>
+              <form method="POST" action="/notes/<%= note.id %>/remove-lock" data-ws-action class="flex items-center gap-2">
+                <input type="hidden" name="ws" value="1">
+                <input type="password" name="pin" inputmode="numeric" autocomplete="off" required placeholder="PIN"
+                       class="w-20 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1 text-xs text-white focus:outline-none">
+                <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Remove lock</button>
+              </form>
+            <% } else if (canLock) { %>
+              <form method="POST" action="/notes/<%= note.id %>/lock" data-ws-action>
+                <input type="hidden" name="ws" value="1">
+                <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Lock</button>
+              </form>
+            <% } %>
+          </div>
+
+          <% if (locals.templateMsg) { %><p class="text-xs text-gray-400"><%= templateMsg %></p><% } %>
+
+          <!-- Attachments -->
+          <div>
+            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Attachments</h2>
+            <% if (note.attachments.length === 0) { %>
+              <p class="text-xs text-gray-600 italic">No attachments yet.</p>
+            <% } %>
+            <ul class="space-y-2">
+              <% note.attachments.forEach(att => { %>
+                <li class="flex items-center gap-2">
+                  <% if (att.mimeType && att.mimeType.startsWith('image/')) { %>
+                    <img src="/notes/<%= note.id %>/attachments/<%= att.filePath %>" alt="" class="h-14 w-14 object-cover rounded-lg">
+                  <% } else { %>
+                    <a href="/notes/<%= note.id %>/attachments/<%= att.filePath %>" target="_blank" rel="noopener"
+                       class="flex-1 min-w-0 truncate text-indigo-400 hover:text-indigo-300"><%= att.filePath %></a>
+                  <% } %>
+                  <form method="POST" action="/notes/<%= note.id %>/attachments/<%= att.id %>/delete" data-ws-action class="ml-auto"
+                        onsubmit="return confirm('Remove this attachment?')">
+                    <input type="hidden" name="ws" value="1">
+                    <button type="submit" class="text-xs text-red-400 hover:text-red-300">Remove</button>
+                  </form>
+                </li>
+              <% }); %>
+            </ul>
+            <form method="POST" action="/notes/<%= note.id %>/attachments" enctype="multipart/form-data" data-ws-action class="mt-3 flex items-center gap-2">
+              <input type="hidden" name="ws" value="1">
+              <input type="file" name="photo" accept="image/*,.pdf,.txt" class="text-xs text-gray-400 min-w-0">
+              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200">Attach</button>
+            </form>
+          </div>
+
+          <!-- Thoughts -->
+          <div>
+            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Thoughts</h2>
+            <% if (note.thoughts.length === 0) { %>
+              <p class="text-xs text-gray-600 italic">No thoughts yet.</p>
+            <% } %>
+            <ul class="space-y-3">
+              <% note.thoughts.forEach(t => { %>
+                <li class="flex items-start gap-2">
+                  <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500"><%= t.user.displayName %> · <%= new Date(t.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %></p>
+                    <p class="text-sm text-gray-300 whitespace-pre-wrap"><%= t.content %></p>
+                  </div>
+                  <form method="POST" action="/notes/<%= note.id %>/thoughts/<%= t.id %>/delete" data-ws-action
+                        onsubmit="return confirm('Delete this thought?')">
+                    <input type="hidden" name="ws" value="1">
+                    <button type="submit" class="text-xs text-red-400 hover:text-red-300">Delete</button>
+                  </form>
+                </li>
+              <% }); %>
+            </ul>
+            <form method="POST" action="/notes/<%= note.id %>/thoughts" data-ws-action class="mt-3 flex gap-2">
+              <input type="hidden" name="ws" value="1">
+              <input type="text" name="content" required placeholder="Add a thought"
+                     class="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none">
+              <button type="submit" class="text-xs px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Add</button>
+            </form>
+          </div>
+
+          <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
+            <span></span>
+            <form method="POST" action="/notes/<%= note.id %>/delete" data-ws-action onsubmit="return confirm('Delete this note? This cannot be undone.')">
+              <input type="hidden" name="ws" value="1">
+              <button type="submit" class="text-red-400 hover:text-red-300">Delete note</button>
+            </form>
+          </div>
+        </aside>
+      </div>
+    <% } %>
+  </section>
+</div>
+
+<script>
+  // ── Folder tree actions ────────────────────────────────────────────────
+  const WS_OPEN_ID = '<%= openId %>';
+
+  function obeloAsk(label, value) {
+    const v = window.prompt(label, value || '');
+    return v && v.trim() ? v.trim() : null;
+  }
+
+  // Saves unsaved edits first (the open note's autosave), then posts the action as a form.
+  async function obeloAct(action, fields) {
+    if (fields && Object.values(fields).some((v) => v === null)) return;
+    if (window.obeloFlush && !(await window.obeloFlush())) return;
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = action;
+    const all = Object.assign({ returnId: WS_OPEN_ID, _csrf: window.obeloCsrfToken }, fields || {});
+    for (const [k, v] of Object.entries(all)) {
+      const i = document.createElement('input');
+      i.type = 'hidden';
+      i.name = k;
+      i.value = v;
+      f.appendChild(i);
+    }
+    document.body.appendChild(f);
+    window.obeloMarkReload && window.obeloMarkReload();
+    f.submit();
+  }
+
+  // The + Note menu: a blank note, or one from a template
+  document.querySelectorAll('[data-note-menu]').forEach((wrap) => {
+    const panel = wrap.querySelector('[data-note-menu-panel]');
+    wrap.querySelector('[data-note-menu-toggle]').addEventListener('click', (e) => { e.stopPropagation(); panel.classList.toggle('hidden'); });
+  });
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('[data-note-menu]').forEach((wrap) => {
+      if (!wrap.contains(e.target)) wrap.querySelector('[data-note-menu-panel]').classList.add('hidden');
+    });
+  });
+
+  function obeloDeleteFolder(id) {
+    if (!window.confirm('Delete this folder? Its notes and subfolders move up one level.')) return;
+    obeloAct('/notes/workspace/folders/' + id + '/delete', {});
+  }
+
+  // ── Select mode and bulk actions ───────────────────────────────────────
+  (function () {
+    const toggle = document.getElementById('ws-select-toggle');
+    const bar = document.getElementById('ws-bulk-bar');
+    const count = document.getElementById('ws-bulk-count');
+    const actionSel = document.getElementById('ws-bulk-action');
+    const tagsInput = document.getElementById('ws-bulk-tags');
+    const selected = new Set();
+    let on = false;
+    const rows = () => document.querySelectorAll('#ws-tree a[data-note-id]');
+    function paint() {
+      rows().forEach((a) => a.classList.toggle('ring-1', on && selected.has(a.dataset.noteId)));
+      rows().forEach((a) => a.classList.toggle('ring-indigo-400', on && selected.has(a.dataset.noteId)));
+      count.textContent = selected.size;
+    }
+    toggle.addEventListener('click', () => {
+      on = !on;
+      selected.clear();
+      toggle.textContent = on ? 'Cancel' : 'Select';
+      bar.classList.toggle('hidden', !on);
+      paint();
+    });
+    document.getElementById('ws-tree').addEventListener('click', (e) => {
+      if (!on) return;
+      const a = e.target.closest('a[data-note-id]');
+      if (!a) return;
+      e.preventDefault();
+      const id = a.dataset.noteId;
+      if (selected.has(id)) selected.delete(id); else selected.add(id);
+      paint();
+    });
+    actionSel.addEventListener('change', () => {
+      tagsInput.classList.toggle('hidden', !/-tags$/.test(actionSel.value));
+    });
+    document.getElementById('ws-bulk-apply').addEventListener('click', () => {
+      if (!selected.size) return;
+      const action = actionSel.value;
+      if (action === 'delete' && !confirm('Delete ' + selected.size + ' note(s)? This cannot be undone.')) return;
+      if (/-tags$/.test(action) && !tagsInput.value.trim()) { tagsInput.focus(); return; }
+      const f = document.createElement('form');
+      f.method = 'POST';
+      f.action = '/notes/bulk';
+      const fields = [['_csrf', window.obeloCsrfToken], ['action', action], ['tags', tagsInput.value]];
+      selected.forEach((id) => fields.push(['ids', id]));
+      fields.forEach(([k, v]) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = k; i.value = v;
+        f.appendChild(i);
+      });
+      document.body.appendChild(f);
+      window.obeloMarkReload && window.obeloMarkReload();
+      f.submit();
+    });
+  })();
+
+  // ── Collapsing folders (remembered on this device) ─────────────────────
+  const WS_COLLAPSE_KEY = 'obelo.notes.collapsedFolders';
+  let wsCollapsed;
+  try { wsCollapsed = new Set((JSON.parse(localStorage.getItem(WS_COLLAPSE_KEY)) || []).map(String)); }
+  catch { wsCollapsed = new Set(); }
+
+  // A row is hidden when any folder above it is collapsed; pinned rows have no ancestors
+  function obeloApplyCollapse() {
+    document.querySelectorAll('[data-ancestors]').forEach((el) => {
+      const ancestors = el.dataset.ancestors ? el.dataset.ancestors.split(' ') : [];
+      el.classList.toggle('hidden', ancestors.some((id) => wsCollapsed.has(id)));
+    });
+    document.querySelectorAll('[data-toggle-folder]').forEach((btn) => {
+      const open = !wsCollapsed.has(btn.dataset.toggleFolder);
+      btn.textContent = open ? '▾' : '▸';
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  }
+
+  document.querySelectorAll('[data-toggle-folder]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = btn.dataset.toggleFolder;
+      if (wsCollapsed.has(id)) wsCollapsed.delete(id); else wsCollapsed.add(id);
+      localStorage.setItem(WS_COLLAPSE_KEY, JSON.stringify([...wsCollapsed]));
+      obeloApplyCollapse();
+    });
+  });
+  obeloApplyCollapse();
+
+  // ── Moving notes: drag onto a folder, or use the Folder picker ─────────
+  async function obeloMove(noteId, folderId) {
+    if (window.obeloFlush && !(await window.obeloFlush())) return;
+    const res = await fetch('/notes/workspace/notes/' + noteId + '/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ folderId: folderId ?? '' }),
+    });
+    if (res.ok) { if (window.obeloMarkReload) window.obeloMarkReload(); window.location.reload(); }
+  }
+
+  document.querySelectorAll('[data-note-id]').forEach((el) => {
+    el.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', el.dataset.noteId);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+  document.querySelectorAll('[data-drop]').forEach((zone) => {
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('bg-indigo-600/20'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('bg-indigo-600/20'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('bg-indigo-600/20');
+      const noteId = e.dataTransfer.getData('text/plain');
+      if (noteId) obeloMove(noteId, zone.dataset.folderId);
+    });
+  });
+
+  const folderPicker = document.getElementById('ws-folder');
+  if (folderPicker) {
+    folderPicker.addEventListener('change', () => obeloMove(WS_OPEN_ID, folderPicker.value));
+  }
+</script>
+
+<% if (state === 'edit') { %>
+<script src="/js/checklist.js"></script>
+<script src="/js/note-editor.js"></script>
+<script src="/js/tag-picker.js"></script>
+<script>
+  // ── Editor: autosave. The editor itself is the shared note-editor.js ──
+  (function () {
+    const NOTE_ID = <%= note.id %>;
+    const form = document.getElementById('ws-form');
+    const status = document.getElementById('ws-status');
+    let saveTimer = null, dirty = false;
+
+    function setStatus(text) { status.textContent = text; }
+
+    // Preview uses the server's sanitised renderer, not the browser's
+    window.renderNotePreview = async (md) => {
+      const res = await fetch('/notes/workspace/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ content: md }),
+      });
+      return res.text();
+    };
+
+    // Handwritten notes open in Draw mode
+    <% if (note.hasDrawing) { %>setContentMode('draw');<% } %>
+
+    // Returns true when the note is saved (or nothing needed saving).
+    async function save() {
+      clearTimeout(saveTimer);
+      if (!dirty) return true;
+      // Clear the flag before sending. Edits made while this request is in flight set it again
+      // and schedule their own save; clearing it after the response would drop them.
+      dirty = false;
+      setStatus('Saving…');
+      try {
+        // Put the editor's mode and drawing into the form before sending
+        document.getElementById('noteModeInput').value = _contentMode;
+        if (_contentMode === 'draw' && _canvasReady) _saveData();
+        if (_contentMode === 'text') document.getElementById('drawingDataInput').value = '';
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { 'x-autosave': '1', 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(new FormData(form)),
+        });
+        if (res.ok) {
+          if (!dirty) setStatus('Saved');
+          return true;
+        }
+        dirty = true;
+        const body = await res.json().catch(() => ({}));
+        setStatus(body.error || 'Not saved');
+        return false;
+      } catch (err) {
+        dirty = true;
+        setStatus('Not saved');
+        return false;
+      }
+    }
+
+
+    // Leaving the page locks the note again. Actions that reload the page from here are not leaving,
+    // so they set a marker first.
+    const RELOAD_KEY = 'obeloWsReloading';
+    window.obeloMarkReload = () => sessionStorage.setItem(RELOAD_KEY, '1');
+    window.addEventListener('pagehide', () => {
+      if (sessionStorage.getItem(RELOAD_KEY)) { sessionStorage.removeItem(RELOAD_KEY); return; }
+      navigator.sendBeacon('/notes/workspace/' + NOTE_ID + '/relock?_csrf=' + encodeURIComponent(window.obeloCsrfToken), new Blob([], { type: 'application/x-www-form-urlencoded' }));
+    });
+
+    // Other scripts call this before they reload the page.
+    window.obeloFlush = async () => { clearTimeout(saveTimer); return save(); };
+
+    function changed() {
+      dirty = true;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(save, 1500);
+    }
+
+    // Action forms save unsaved edits before they reload the page.
+    document.querySelectorAll('form[data-ws-action]').forEach((actionForm) => {
+      actionForm.addEventListener('submit', async (e) => {
+        if (e.defaultPrevented) return;
+        window.obeloMarkReload();
+        if (!dirty) return;
+        e.preventDefault();
+        if (await window.obeloFlush()) actionForm.submit();
+      });
+    });
+
+    form.addEventListener('input', changed);
+    form.addEventListener('change', changed);
+    form.addEventListener('submit', (e) => e.preventDefault());
+    document.querySelectorAll('[form="ws-form"]').forEach((el) => {
+      el.addEventListener('input', changed);
+      el.addEventListener('change', changed);
+    });
+  })();
+</script>
+<% } %>

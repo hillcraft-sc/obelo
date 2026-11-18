@@ -1,0 +1,212 @@
+<%
+  const _tz = currentUser.timezone || 'UTC';
+  const _todayLocal = new Date().toLocaleDateString('en-CA', { timeZone: _tz });
+  const _nowHHMM = (() => { const s = new Date().toLocaleTimeString('en-US', { timeZone: _tz, hour: '2-digit', minute: '2-digit', hour12: false }); return s === '24:00' ? '00:00' : s; })();
+  const _dueStr = task.dueDate ? task.dueDate.toISOString().split('T')[0] : null;
+  const overdue = _dueStr && task.status !== 'done' && (_dueStr < _todayLocal || (_dueStr === _todayLocal && task.dueTime && task.dueTime < _nowHHMM));
+  const statusCls = STATUS_CLS[task.status] || 'text-gray-400';
+%>
+<style>
+  .prose { overflow-wrap: break-word; word-break: break-word; }
+  .prose h1,.prose h2,.prose h3 { color: #f3f4f6; font-weight: 600; margin-top: 1.25em; margin-bottom: .5em; }
+  .prose h1 { font-size: 1.5rem; } .prose h2 { font-size: 1.25rem; } .prose h3 { font-size: 1.05rem; }
+  .prose p { color: #d1d5db; line-height: 1.75; margin-bottom: 1em; }
+  .prose a { color: #818cf8; text-decoration: underline; }
+  .prose strong { color: #f9fafb; font-weight: 600; }
+  .prose em { color: #d1d5db; font-style: italic; }
+  .prose code { background: #1f2937; color: #a5b4fc; padding: 2px 6px; border-radius: 4px; font-size: .875em; }
+  .prose pre { background: #111827; border: 1px solid #374151; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-bottom: 1em; }
+  .prose pre code { background: none; padding: 0; color: #e5e7eb; }
+  .prose blockquote { border-left: 3px solid #4b5563; padding-left: 1rem; color: #9ca3af; margin: 1em 0; font-style: italic; }
+  .prose ul { list-style: disc; padding-left: 1.5rem; color: #d1d5db; margin-bottom: 1em; }
+  .prose ol { list-style: decimal; padding-left: 1.5rem; color: #d1d5db; margin-bottom: 1em; }
+  .prose li { margin-bottom: .25em; }
+  .prose li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.25rem; }
+  .prose li input[type="checkbox"] { margin-right: .4em; pointer-events: none; opacity: 1; accent-color: #6366f1; }
+  .prose hr { border-color: #374151; margin: 1.5em 0; }
+</style>
+
+<div class="max-w-2xl mx-auto">
+
+  <!-- Back -->
+  <a href="/tasks" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 mb-5 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+    </svg>
+    Tasks
+  </a>
+
+  <div class="rounded-xl bg-gray-900 border border-gray-800 p-5 mb-4">
+
+    <!-- Inline title edit -->
+    <div class="mb-4">
+      <h1 id="task-title"
+          class="text-2xl font-bold text-white cursor-text leading-tight"
+          onclick="document.getElementById('title-input').classList.remove('hidden'); this.classList.add('hidden'); document.getElementById('title-input').focus();">
+        <%= task.title %>
+      </h1>
+      <input id="title-input" type="text" name="title" value="<%= task.title %>"
+             hx-patch="/tasks/<%= task.id %>/title"
+             hx-trigger="keyup[key=='Enter'], blur"
+             hx-target="#task-title-wrap"
+             hx-swap="innerHTML"
+             class="hidden w-full text-2xl font-bold bg-transparent border-0 border-b-2 border-indigo-500 text-white
+                    focus:outline-hidden focus:ring-0 pb-0.5"
+             onblur="htmx.trigger(this, 'blur')" />
+    </div>
+    <div id="task-title-wrap" style="display:none"></div>
+
+    <!-- Meta row -->
+    <div class="flex flex-wrap items-center gap-3 mb-5 text-sm">
+      <div class="flex items-center gap-1.5">
+        <%- PRIORITY_ICON[task.priority] || PRIORITY_ICON.none %>
+        <span class="text-gray-400 capitalize"><%= task.priority === 'none' ? 'No priority' : task.priority %> priority</span>
+      </div>
+      <span class="text-gray-700">·</span>
+      <span class="<%= statusCls %> font-medium"><%= STATUS_LABELS[task.status] || task.status %></span>
+      <% if (_dueStr) { %>
+        <span class="text-gray-700">·</span>
+        <span class="<%= overdue ? 'text-red-400 font-medium' : 'text-gray-400' %>">
+          <% if (overdue) { %>Overdue — <% } %>
+          <%= new Date(_dueStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' }) %>
+          <% if (task.dueTime) { %> at <%= fmtTime(task.dueTime) %><% } %>
+        </span>
+      <% } %>
+      <% if (task.recurring) { %>
+        <span class="text-gray-700">·</span>
+        <span class="text-gray-500 text-xs">↻ <%= task.recurRule %></span>
+      <% } %>
+    </div>
+
+    <!-- Tags -->
+    <% if (task.tags.length > 0) { %>
+      <div class="flex flex-wrap gap-1.5 mb-5">
+        <% task.tags.forEach(t => { %>
+          <a href="/tasks?tag=<%= encodeURIComponent(t) %>" class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors">#<%= t %></a>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <!-- Action buttons -->
+    <div class="flex flex-wrap gap-2">
+      <a href="/tasks/<%= task.id %>/edit"
+         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-700 bg-gray-800 text-gray-300 hover:text-white transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+        </svg>
+        Edit
+      </a>
+
+      <% if (task.status !== 'done') { %>
+        <button hx-post="/tasks/<%= task.id %>/complete"
+                hx-on::after-request="window.location.href='/tasks'"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-800 bg-green-950 text-green-400 hover:bg-green-900 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Mark complete
+        </button>
+      <% } else { %>
+        <button hx-post="/tasks/<%= task.id %>/restore"
+                hx-on::after-request="window.location.href='/tasks'"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-700 bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors">
+          Restore to inbox
+        </button>
+      <% } %>
+
+      <form action="/tasks/<%= task.id %>/delete" method="POST" class="inline"
+            onsubmit="return confirm('Delete this task?')">
+        <button type="submit"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-700 bg-gray-800 text-gray-400 hover:text-red-400 hover:border-red-900 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+          </svg>
+          Delete
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <% if (task.notes && task.notes.trim()) { %>
+    <div class="rounded-xl bg-gray-900 border border-gray-800 p-5 mb-4">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Notes</h2>
+      <div class="prose text-sm"><%- renderedNotes %></div>
+    </div>
+  <% } %>
+
+  <!-- Subtasks -->
+  <div class="rounded-xl bg-gray-900 border border-gray-800 p-5 mb-4">
+    <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+      Subtasks
+      <% if (task.subtasks.length > 0) { %>
+        <span class="ml-1.5 text-gray-700 font-normal normal-case">
+          <%= task.subtasks.filter(s => s.status === 'done').length %>/<%= task.subtasks.length %> done
+        </span>
+      <% } %>
+    </h2>
+
+    <% if (task.subtasks.length > 0) { %>
+      <ul class="space-y-1 mb-4">
+        <% task.subtasks.forEach(sub => { %>
+          <li class="flex items-center gap-3 py-1.5 group">
+            <form action="/tasks/<%= task.id %>/subtasks/<%= sub.id %>/toggle" method="POST" class="shrink-0">
+              <button type="submit"
+                      class="w-4 h-4 rounded border-2 flex items-center justify-center transition-colors shrink-0
+                             <%= sub.status === 'done' ? 'bg-green-500/20 border-green-500' : 'border-gray-600 hover:border-green-500' %>">
+                <% if (sub.status === 'done') { %>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5 text-green-400">
+                    <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+                  </svg>
+                <% } %>
+              </button>
+            </form>
+            <span class="flex-1 text-sm <%= sub.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300' %>">
+              <%= sub.title %>
+            </span>
+            <form action="/tasks/<%= task.id %>/subtasks/<%= sub.id %>/delete" method="POST"
+                  class="opacity-0 group-hover:opacity-100 transition-opacity">
+              <button type="submit" class="text-gray-700 hover:text-red-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </form>
+          </li>
+        <% }); %>
+      </ul>
+    <% } %>
+
+    <form action="/tasks/<%= task.id %>/subtasks" method="POST" class="flex gap-2">
+      <input type="text" name="title" placeholder="Add a subtask…" autocomplete="off"
+             class="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm
+                    focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+      <button type="submit"
+              class="px-3.5 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 hover:text-white text-sm transition-colors">
+        Add
+      </button>
+    </form>
+  </div>
+
+  <!-- Timestamps -->
+  <p class="text-xs text-gray-700 mt-3">
+    Created <%= new Date(task.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: _tz }) %>
+    <% if (task.completedAt) { %> · Completed <%= new Date(task.completedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: _tz }) %><% } %>
+  </p>
+
+</div>
+
+<script>
+  // Keep title in sync: after HTMX patch, swap back to heading display
+  document.body.addEventListener('htmx:afterSwap', (e) => {
+    if (e.detail.target?.id === 'task-title-wrap') {
+      const heading = document.getElementById('task-title');
+      const input = document.getElementById('title-input');
+      if (heading && input) {
+        heading.textContent = input.value;
+        heading.classList.remove('hidden');
+        input.classList.add('hidden');
+      }
+    }
+  });
+</script>

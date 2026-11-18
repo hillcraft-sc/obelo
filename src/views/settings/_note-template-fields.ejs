@@ -1,0 +1,28 @@
+<%#
+  The fields of one note template (new or existing). Locals: tpl = { label, type, title, dateTitle, content }
+%>
+<div class="grid sm:grid-cols-2 gap-3">
+  <label class="block text-xs text-gray-500">Name
+    <input type="text" name="label" value="<%= tpl.label %>" maxlength="60" required placeholder="Standup"
+           class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+  </label>
+  <label class="block text-xs text-gray-500">Type
+    <select name="type" class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none">
+      <% [['note', 'Note'], ['journal', 'Journal'], ['quote', 'Quote']].forEach(([val, label]) => { %>
+        <option value="<%= val %>" <%= tpl.type === val ? 'selected' : '' %>><%= label %></option>
+      <% }); %>
+    </select>
+  </label>
+</div>
+<label class="block text-xs text-gray-500">Starting title
+  <input type="text" name="title" value="<%= tpl.title %>" maxlength="120" placeholder="Standup — "
+         class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+</label>
+<label class="flex items-center gap-2 text-xs text-gray-400">
+  <input type="checkbox" name="dateTitle" <%= tpl.dateTitle ? 'checked' : '' %>>
+  Use today's date as the title (the starting title above is then ignored)
+</label>
+<label class="block text-xs text-gray-500">Starting text <span class="text-gray-600">(Markdown)</span>
+  <textarea name="content" rows="8" maxlength="20000" placeholder="## Done&#10;- &#10;&#10;## Next&#10;- "
+            class="mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 font-mono focus:outline-none focus:border-indigo-500"><%= tpl.content %></textarea>
+</label>

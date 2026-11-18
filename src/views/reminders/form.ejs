@@ -1,0 +1,306 @@
+<% const isEdit = !!(reminder && reminder.id); %>
+<% const dueDateVal = reminder.dueDate
+     ? (reminder.dueDate instanceof Date
+         ? reminder.dueDate.toISOString().split('T')[0]
+         : String(reminder.dueDate).split('T')[0])
+     : ''; %>
+<% const dueDayOfMonth = dueDateVal ? parseInt(dueDateVal.split('-')[2]) : 1; %>
+
+<div class="max-w-xl mx-auto py-6 px-4">
+
+  <!-- Back link -->
+  <a href="<%= isEdit ? `/reminders/${reminder.id}` : '/reminders' %>"
+     class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 mb-6 transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+    </svg>
+    <%= isEdit ? 'Reminder' : 'Reminders' %>
+  </a>
+
+  <h1 class="text-xl font-bold text-white mb-6">
+    <%= isEdit ? 'Edit reminder' : 'New reminder' %>
+  </h1>
+
+  <!-- Error list -->
+  <% if (errors && errors.length) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm">
+      <% for (const e of errors) { %><div><%= e %></div><% } %>
+    </div>
+  <% } %>
+
+  <form method="POST"
+        action="<%= isEdit ? `/reminders/${reminder.id}` : '/reminders' %>"
+        id="reminderForm"
+        class="space-y-5">
+
+    <!-- Title -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Title <span class="text-red-400">*</span></label>
+      <input type="text" name="title" required
+             value="<%= reminder.title || '' %>"
+             placeholder="Reminder title"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+    </div>
+
+    <!-- Due date + time row -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Due date <span class="text-red-400">*</span></label>
+        <input type="date" name="dueDate" required
+               value="<%= dueDateVal %>"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Due time <span class="text-red-400">*</span></label>
+        <input type="time" name="dueTime" required
+               value="<%= reminder.dueTime || '09:00' %>"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      </div>
+    </div>
+
+    <!-- Notify offset -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Notify me</label>
+      <select name="reminderOffset"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <% const currentOffset = reminder.reminderOffset != null ? String(reminder.reminderOffset) : '0'; %>
+        <option value="0"   <%= currentOffset === '0'  ? 'selected' : '' %>>At the due time</option>
+        <option value="15"  <%= currentOffset === '15' ? 'selected' : '' %>>15 minutes before</option>
+        <option value="30"  <%= currentOffset === '30' ? 'selected' : '' %>>30 minutes before</option>
+        <option value="60"  <%= currentOffset === '60' ? 'selected' : '' %>>1 hour before</option>
+      </select>
+    </div>
+
+    <!-- Priority -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Priority</label>
+      <select name="priority"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        <% const priorities = ['none','low','medium','high']; %>
+        <% for (const p of priorities) { %>
+          <option value="<%= p %>" <%= (reminder.priority || 'none') === p ? 'selected' : '' %>><%= p.charAt(0).toUpperCase() + p.slice(1) %></option>
+        <% } %>
+      </select>
+    </div>
+
+    <!-- Notes -->
+    <div>
+      <label class="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+      <textarea name="notes" rows="4"
+                placeholder="Optional notes…"
+                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"><%= reminder.notes || '' %></textarea>
+    </div>
+
+    <!-- Tags -->
+    <div>
+      <label for="tags" class="block text-sm font-medium text-gray-300 mb-1.5">Tags</label>
+      <input type="text" id="tags" name="tags"
+             value="<%= reminder && reminder.tags ? (Array.isArray(reminder.tags) ? reminder.tags.join(', ') : reminder.tags) : '' %>"
+             class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+             placeholder="work, personal, errand  (comma-separated)" />
+      <% if (tagList && tagList.length > 0) { %>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <% tagList.forEach(tag => { %>
+            <button type="button" onclick="addTag(<%= JSON.stringify(tag) %>)"
+                    class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-500 hover:text-gray-200 hover:bg-gray-700 border border-gray-700 transition-colors">
+              #<%= tag %>
+            </button>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Recurring -->
+    <div class="bg-gray-800/50 rounded-lg border border-gray-700 p-4 space-y-3">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" name="recurring" id="recurringCheck"
+               <%= reminder.recurring ? 'checked' : '' %>
+               class="w-4 h-4 accent-indigo-500"
+               onchange="document.getElementById('recurFields').classList.toggle('hidden', !this.checked)">
+        <span class="text-sm text-gray-300">Repeat this reminder</span>
+      </label>
+
+      <div id="recurFields" class="<%= reminder.recurring ? '' : 'hidden' %> ml-7 space-y-3">
+        <!-- Hidden input carries the actual rule value sent to the server -->
+        <input type="hidden" name="recurRule" id="recurRuleHidden" value="<%= reminder.recurRule || 'daily' %>">
+
+        <!-- Preset / Custom selector -->
+        <div id="recurInit" data-rule="<%= reminder.recurRule || '' %>">
+          <label class="block text-xs text-gray-500 mb-1">Repeat</label>
+          <select id="recurRuleSelect" onchange="handleRuleSelect(this.value)"
+                  class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <option value="hourly">Hourly</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekends">Weekends</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="every3months">Every 3 Months</option>
+            <option value="every6months">Every 6 Months</option>
+            <option value="yearly">Yearly</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+
+        <!-- Custom panel — shown only when "Custom…" is selected -->
+        <div id="customPanel" class="hidden space-y-3 pt-3 border-t border-gray-700/60">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Frequency</label>
+              <select id="customFreq" onchange="handleCustomFreq(this.value)"
+                      class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Every</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="customInterval" min="1" max="99" value="1"
+                       oninput="updateCustomRule()"
+                       class="w-16 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <span id="customIntervalUnit" class="text-sm text-gray-400">days</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly sub-options -->
+          <div id="monthlyOptions" class="hidden space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="monthType" value="each" id="monthTypeEach"
+                     checked onchange="updateCustomRule()" class="accent-indigo-500 shrink-0">
+              <span class="text-sm text-gray-400 whitespace-nowrap">Each day</span>
+              <select id="monthDaySelect" onchange="updateCustomRule()"
+                      class="ml-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <% for (let d = 1; d <= 31; d++) { %>
+                  <option value="<%= d %>" <%= d === dueDayOfMonth ? 'selected' : '' %>><%= d %></option>
+                <% } %>
+              </select>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer flex-wrap">
+              <input type="radio" name="monthType" value="onthe" id="monthTypeOnThe"
+                     onchange="updateCustomRule()" class="accent-indigo-500 shrink-0">
+              <span class="text-sm text-gray-400 whitespace-nowrap">On the</span>
+              <select id="monthOrdSelect" onchange="updateCustomRule()"
+                      class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <option value="first">first</option>
+                <option value="second">second</option>
+                <option value="third">third</option>
+                <option value="fourth">fourth</option>
+                <option value="last">last</option>
+              </select>
+              <select id="monthWeekdaySelect" onchange="updateCustomRule()"
+                      class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-white text-sm focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <option value="sunday">Sunday</option>
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+                <option value="saturday">Saturday</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit"
+              class="px-6 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors">
+        <%= isEdit ? 'Save changes' : 'Create reminder' %>
+      </button>
+      <a href="<%= isEdit ? `/reminders/${reminder.id}` : '/reminders' %>"
+         class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-sm text-gray-400 hover:text-gray-200 border border-gray-700 transition-colors">
+        Cancel
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+function addTag(tag) {
+  const input = document.getElementById('tags');
+  const current = input.value.split(',').map(t => t.trim()).filter(Boolean);
+  if (!current.includes(tag)) {
+    input.value = current.length ? current.join(', ') + ', ' + tag : tag;
+  }
+}
+
+(function () {
+  const UNITS = { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' };
+  const PRESETS = ['hourly','daily','weekdays','weekends','weekly','biweekly','monthly','every3months','every6months','yearly'];
+
+  function handleRuleSelect(val) {
+    document.getElementById('customPanel').classList.toggle('hidden', val !== 'custom');
+    if (val !== 'custom') {
+      document.getElementById('recurRuleHidden').value = val;
+    } else {
+      updateCustomRule();
+    }
+  }
+
+  function handleCustomFreq(freq) {
+    document.getElementById('customIntervalUnit').textContent = UNITS[freq] || 'days';
+    document.getElementById('monthlyOptions').classList.toggle('hidden', freq !== 'monthly');
+    updateCustomRule();
+  }
+
+  function updateCustomRule() {
+    const freq = document.getElementById('customFreq').value;
+    const interval = document.getElementById('customInterval').value || '1';
+    let rule = 'custom:' + freq + ':' + interval;
+    if (freq === 'monthly') {
+      const checked = document.querySelector('input[name="monthType"]:checked');
+      const monthType = checked ? checked.value : 'each';
+      if (monthType === 'each') {
+        rule += ':each:' + document.getElementById('monthDaySelect').value;
+      } else {
+        rule += ':onthe:' + document.getElementById('monthOrdSelect').value + ':' + document.getElementById('monthWeekdaySelect').value;
+      }
+    }
+    document.getElementById('recurRuleHidden').value = rule;
+  }
+
+  // Expose to inline onchange handlers
+  window.handleRuleSelect = handleRuleSelect;
+  window.handleCustomFreq = handleCustomFreq;
+  window.updateCustomRule = updateCustomRule;
+
+  // Initialize from existing saved rule
+  var rule = document.getElementById('recurInit').dataset.rule || '';
+  if (rule && PRESETS.includes(rule)) {
+    document.getElementById('recurRuleSelect').value = rule;
+  } else if (rule.startsWith('custom:')) {
+    var parts = rule.split(':');
+    var freq = parts[1] || 'daily';
+    document.getElementById('recurRuleSelect').value = 'custom';
+    document.getElementById('customPanel').classList.remove('hidden');
+    document.getElementById('customFreq').value = freq;
+    document.getElementById('customInterval').value = parts[2] || '1';
+    document.getElementById('customIntervalUnit').textContent = UNITS[freq] || 'days';
+    if (freq === 'monthly') {
+      document.getElementById('monthlyOptions').classList.remove('hidden');
+      if (parts[3] === 'onthe') {
+        document.getElementById('monthTypeOnThe').checked = true;
+        document.getElementById('monthOrdSelect').value = parts[4] || 'first';
+        document.getElementById('monthWeekdaySelect').value = parts[5] || 'sunday';
+      } else {
+        document.getElementById('monthTypeEach').checked = true;
+        document.getElementById('monthDaySelect').value = parts[4] || '1';
+      }
+    }
+  }
+
+  // Re-sync hidden input before submit if custom is selected
+  document.getElementById('reminderForm').addEventListener('submit', function () {
+    if (document.getElementById('recurRuleSelect').value === 'custom') {
+      updateCustomRule();
+    }
+  });
+})();
+</script>

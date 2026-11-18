@@ -1,0 +1,251 @@
+<div class="max-w-3xl mx-auto py-6 px-4">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between gap-3 mb-6">
+    <%- include('../partials/page-heading', { heading: 'Routines', description: 'Habits that repeat on a schedule.' }) %>
+    <a href="/routines/new"
+       class="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm text-white font-medium transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      New routine
+    </a>
+  </div>
+
+  <!-- View tabs -->
+  <%- include('../partials/tabs', { tabs: [['today','Today'],['all','All'],['archived','Archived']].map(([key, label]) => ({
+    href: '/routines?view=' + key + (activeTag ? '&tag=' + encodeURIComponent(activeTag) : ''),
+    label, active: view === key,
+  })) }) %>
+
+  <!-- Tag filter -->
+  <% if (allTags.length > 0) { %>
+    <div class="flex flex-wrap gap-1.5 mb-4">
+      <a href="/routines?view=<%= view %>"
+         class="px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                <%= !activeTag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+        All
+      </a>
+      <% allTags.forEach(tag => { %>
+        <a href="/routines?view=<%= view %>&tag=<%= encodeURIComponent(tag) %>"
+           class="px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors
+                  <%= activeTag === tag ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700' %>">
+          #<%= tag %>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+
+  <!-- Bulk form -->
+  <form id="bulk-form-routines" action="/routines/bulk" method="POST" class="inline">
+    <input type="hidden" name="view" value="<%= view %>">
+  </form>
+
+  <!-- Bulk action bar (hidden until selection made) -->
+  <div id="bulk-bar-routines" class="hidden mb-4 flex items-center gap-3 px-4 py-2.5 bg-indigo-950/50 border border-indigo-900 rounded-xl">
+    <span class="text-xs text-indigo-300 font-medium flex-1"><span id="bulk-count-routines">0</span> selected</span>
+    <select name="action" form="bulk-form-routines"
+            class="text-xs bg-gray-800 border border-gray-700 text-gray-200 rounded-lg px-2 py-1 focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+      <% if (view === 'archived') { %>
+        <option value="restore">Restore</option>
+      <% } else { %>
+        <option value="archive">Archive</option>
+      <% } %>
+      <option value="delete">Delete</option>
+    </select>
+    <button type="submit" form="bulk-form-routines"
+            class="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors">
+      Apply
+    </button>
+    <button type="button" onclick="clearRoutineSelection()"
+            class="text-gray-500 hover:text-gray-300 text-xs transition-colors">Cancel</button>
+  </div>
+
+  <% if (routines.length === 0 && notDueToday.length === 0 && view !== 'archived') { %>
+    <% if (activeTag) { %>
+      <%- include('../partials/empty-state', { message: 'No routines match this filter.', action: { label: 'Clear filter', href: '/routines?view=' + view } }) %>
+    <% } else { %>
+      <%- include('../partials/empty-state', { message: 'No routines yet.', action: { label: 'New routine', href: '/routines/new' } }) %>
+    <% } %>
+
+  <% } else if (view === 'today') { %>
+    <!-- Due today: grouped by time of day -->
+    <% if (routines.length === 0) { %>
+      <%- include('../partials/empty-state', { message: 'Nothing due today.', action: null }) %>
+    <% } else { %>
+      <% TIME_OF_DAY.forEach(tod => { %>
+        <% if (grouped[tod].length > 0) { %>
+          <div class="mb-6">
+            <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-2 px-1">
+              <%= TIME_LABELS[tod] %>
+            </h2>
+            <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+              <% grouped[tod].forEach(routine => { %>
+                <%- include('_row', {
+                  routine,
+                  completedToday: completedTodayIds.has(routine.id),
+                  isDueToday: true,
+                  completionCount: routine._count ? routine._count.completions : undefined,
+                  FREQ_LABELS,
+                }) %>
+              <% }); %>
+            </div>
+          </div>
+        <% } %>
+      <% }); %>
+    <% } %>
+
+    <!-- Not due today: flat list, dimmed -->
+    <% if (notDueToday.length > 0) { %>
+      <div class="mb-2">
+        <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-700 mb-2 px-1">Not due today</h2>
+        <div class="bg-gray-900/50 rounded-xl border border-gray-800/60 overflow-hidden opacity-60">
+          <% notDueToday.forEach(routine => { %>
+            <%- include('_row', {
+              routine,
+              completedToday: completedTodayIds.has(routine.id),
+              isDueToday: false,
+              completionCount: routine._count ? routine._count.completions : undefined,
+              FREQ_LABELS,
+            }) %>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+  <% } else { %>
+    <!-- Flat list for All / Archived -->
+    <% if (routines.length > 0) { %>
+      <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        <% routines.forEach(routine => { %>
+          <%- include('_row', {
+            routine,
+            completedToday: completedTodayIds.has(routine.id),
+            isDueToday: isDueToday(routine),
+            completionCount: routine._count ? routine._count.completions : undefined,
+            FREQ_LABELS,
+          }) %>
+        <% }); %>
+      </div>
+    <% } %>
+
+    <!-- Completed Streaks (archived time-limited routines that hit their goal) -->
+    <% if (view === 'archived' && completedStreaks && completedStreaks.length > 0) { %>
+      <div class="mt-8">
+        <h2 class="text-xs font-semibold uppercase tracking-widest text-gray-600 mb-3 px-1">Completed Streaks</h2>
+        <div class="space-y-3">
+          <% completedStreaks.forEach(streak => {
+               const done = streak._count.completions;
+               const pct = streak.durationDays ? Math.round((done / streak.durationDays) * 100) : 100;
+          %>
+            <div class="bg-gray-900 rounded-xl border border-gray-800 px-5 py-4 flex items-center gap-4">
+              <div class="w-8 h-8 rounded-full bg-green-500/10 border border-green-700 flex items-center justify-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-green-400">
+                  <path fill-rule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <a href="/routines/<%= streak.id %>" class="text-sm font-medium text-gray-200 hover:text-white truncate block">
+                  <%= streak.title %>
+                </a>
+                <div class="text-xs text-gray-500 mt-0.5">
+                  <%= done %>/<%= streak.durationDays %> days — <%= pct %>%
+                  <% if (streak.streakBest) { %> · Best streak: <%= streak.streakBest %> days<% } %>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Empty state -->
+    <% if (view === 'archived' && routines.length === 0 && (!completedStreaks || completedStreaks.length === 0)) { %>
+      <%- include('../partials/empty-state', { message: 'No archived routines yet.', action: null }) %>
+    <% } %>
+  <% } %>
+
+</div>
+
+<script>
+  // Bulk selection
+  const _rtCheckboxes = () => document.querySelectorAll('input[name="ids"][form="bulk-form-routines"]');
+  const _rtBulkBar    = document.getElementById('bulk-bar-routines');
+  const _rtBulkCount  = document.getElementById('bulk-count-routines');
+
+  function updateRoutineBulkBar() {
+    if (!_rtBulkBar) return;
+    const checked = [..._rtCheckboxes()].filter(c => c.checked);
+    if (checked.length > 0) {
+      _rtBulkBar.classList.remove('hidden');
+      _rtBulkCount.textContent = checked.length;
+    } else {
+      _rtBulkBar.classList.add('hidden');
+    }
+  }
+
+  function clearRoutineSelection() {
+    _rtCheckboxes().forEach(c => c.checked = false);
+    if (_rtBulkBar) _rtBulkBar.classList.add('hidden');
+  }
+
+  document.addEventListener('change', e => {
+    if (e.target.type === 'checkbox' && e.target.form?.id === 'bulk-form-routines') updateRoutineBulkBar();
+  });
+
+  // Mobile swipe: right = complete toggle
+  (function() {
+    if (!('ontouchstart' in window)) return;
+    var THRESHOLD = 72;
+    var startX, startY, activeRow, activeContent, locked;
+
+    document.addEventListener('touchstart', function(e) {
+      var row = e.target.closest('.routine-row');
+      if (!row) return;
+      var hint = row.querySelector('.swipe-hint-r');
+      if (!hint) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeRow = row;
+      activeContent = row.querySelector('.swipe-content');
+      locked = false;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!activeRow || locked) return;
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > Math.abs(dx) + 8) { locked = true; activeRow = null; return; }
+      if (Math.abs(dx) < 6 || dx < 0) return;
+      e.preventDefault();
+      activeContent.style.transform = 'translateX(' + dx + 'px)';
+      activeContent.style.transition = 'none';
+      activeRow.querySelector('.swipe-hint-r').style.opacity = Math.min(1, dx / THRESHOLD);
+    }, { passive: false });
+
+    document.addEventListener('touchend', function(e) {
+      if (!activeRow || locked) { activeRow = null; return; }
+      var dx = e.changedTouches[0].clientX - startX;
+      var row = activeRow;
+      activeRow = null;
+      if (dx >= THRESHOLD) swipeRoutineComplete(row);
+      else snapBack(row);
+    }, { passive: true });
+
+    function snapBack(row) {
+      var c = row.querySelector('.swipe-content');
+      c.style.transform = 'translateX(0)';
+      c.style.transition = 'transform .25s ease';
+      var h = row.querySelector('.swipe-hint-r');
+      if (h) h.style.opacity = 0;
+    }
+
+    function swipeRoutineComplete(row) {
+      snapBack(row);
+      var id = row.id.replace('routine-', '');
+      fetch('/routines/' + id + '/complete', { method: 'POST' })
+        .then(function(r) { return r.text(); })
+        .then(function(html) { row.outerHTML = html; });
+    }
+  })();
+</script>

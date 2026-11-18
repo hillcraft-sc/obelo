@@ -1,0 +1,350 @@
+<div class="max-w-2xl mx-auto">
+
+  <div class="flex items-center gap-3 mb-6">
+    <a href="<%= task && task.id ? '/tasks/' + task.id : '/tasks' %>"
+       class="text-gray-500 hover:text-gray-300 transition-colors">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+    </a>
+    <h1 class="text-xl font-bold text-white"><%= task && task.id ? 'Edit Task' : 'New Task' %></h1>
+  </div>
+
+  <% if (errors && errors.length > 0) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm">
+      <% errors.forEach(e => { %><p><%= e %></p><% }); %>
+    </div>
+  <% } %>
+
+  <form action="<%= task && task.id ? '/tasks/' + task.id : '/tasks' %>" method="POST" class="space-y-5">
+
+    <!-- Title -->
+    <div>
+      <label for="title" class="block text-sm font-medium text-gray-400 mb-1.5">Title</label>
+      <input type="text" id="title" name="title"
+             value="<%= task && task.title ? task.title : '' %>"
+             autofocus required
+             class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm
+                    focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+             placeholder="Task title" />
+    </div>
+
+    <!-- Status + Priority row -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="status" class="block text-sm font-medium text-gray-400 mb-1.5">Status</label>
+        <select id="status" name="status"
+                class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 text-sm
+                       focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+          <% STATUSES.filter(s => s !== 'archived').forEach(s => { %>
+            <option value="<%= s %>" <%= (task && task.status === s) ? 'selected' : '' %>><%= STATUS_LABELS[s] %></option>
+          <% }); %>
+        </select>
+      </div>
+
+      <div>
+        <label for="priority" class="block text-sm font-medium text-gray-400 mb-1.5">Priority</label>
+        <select id="priority" name="priority"
+                class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 text-sm
+                       focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+          <% [['none','No priority'],['low','Low'],['medium','Medium'],['high','High']].forEach(([val, label]) => { %>
+            <option value="<%= val %>" <%= (task && task.priority === val) ? 'selected' : '' %>><%= label %></option>
+          <% }); %>
+        </select>
+      </div>
+    </div>
+
+    <!-- Due date + time row -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="dueDate" class="block text-sm font-medium text-gray-400 mb-1.5">Due date</label>
+        <input type="date" id="dueDate" name="dueDate"
+               value="<%= task && task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '' %>"
+               class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm
+                      focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label for="dueTime" class="block text-sm font-medium text-gray-400 mb-1.5">Time</label>
+        <input type="time" id="dueTime" name="dueTime"
+               value="<%= task && task.dueTime ? task.dueTime : '' %>"
+               class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm
+                      focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+      </div>
+    </div>
+
+    <!-- Notes / subtasks -->
+    <div>
+      <label for="notes" class="block text-sm font-medium text-gray-400 mb-1.5">Notes</label>
+      <div class="flex items-center px-2 py-1.5 bg-gray-800 border border-gray-700 border-b-0 rounded-t-lg">
+        <button type="button" onclick="insertChecklist()" title="Insert subtask checklist"
+                class="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-gray-400 hover:bg-gray-700 hover:text-gray-200 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+            <path fill-rule="evenodd" d="M2.5 3A1.5 1.5 0 001 4.5v4A1.5 1.5 0 002.5 10h6A1.5 1.5 0 0010 8.5v-4A1.5 1.5 0 008.5 3h-6zm11 2a.75.75 0 000 1.5h5a.75.75 0 000-1.5h-5zm0 4a.75.75 0 000 1.5h5a.75.75 0 000-1.5h-5zM3 13.75a.75.75 0 01.75-.75h.5a.75.75 0 010 1.5h-.5a.75.75 0 01-.75-.75zm.75 1.75a.75.75 0 000 1.5h.5a.75.75 0 000-1.5h-.5zM2.5 13A1.5 1.5 0 001 14.5v1A1.5 1.5 0 002.5 17h6a1.5 1.5 0 001.5-1.5v-1A1.5 1.5 0 008.5 13h-6zm11 1.75a.75.75 0 000 1.5h5a.75.75 0 000-1.5h-5zm0-1.75a.75.75 0 000 1.5h5a.75.75 0 000-1.5h-5z" clip-rule="evenodd"/>
+          </svg>
+          Subtask checklist
+        </button>
+      </div>
+      <textarea id="notes" name="notes" rows="6"
+                class="w-full px-3.5 py-3 rounded-b-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm font-mono
+                       focus:outline-hidden focus:ring-2 focus:ring-indigo-500 resize-y"
+                placeholder="Notes, context, or markdown..."><%= task && task.notes ? task.notes : '' %></textarea>
+      <p class="text-xs text-gray-600 mt-1.5">Markdown supported</p>
+    </div>
+
+    <!-- Tags -->
+    <div>
+      <label for="tags" class="block text-sm font-medium text-gray-400 mb-1.5">Tags</label>
+      <input type="text" id="tags" name="tags"
+             value="<%= task && task.tags ? (Array.isArray(task.tags) ? task.tags.join(', ') : task.tags) : '' %>"
+             class="w-full px-3.5 py-2.5 rounded-lg bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-600 text-sm
+                    focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+             placeholder="work, personal, errand  (comma-separated)" />
+      <% if (tagList && tagList.length > 0) { %>
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <% tagList.forEach(tag => { %>
+            <button type="button" onclick="addTag(<%= JSON.stringify(tag) %>)"
+                    class="px-2 py-0.5 rounded-full text-xs bg-gray-800 text-gray-500 hover:text-gray-200 hover:bg-gray-700 border border-gray-700 transition-colors">
+              #<%= tag %>
+            </button>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Recurring -->
+    <%
+      const taskDueDateVal = task && task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
+      const taskDueDayOfMonth = taskDueDateVal ? parseInt(taskDueDateVal.split('-')[2]) : 1;
+    %>
+    <div class="rounded-lg bg-gray-800/50 border border-gray-800 p-4 space-y-3">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" name="recurring" id="recurringCheck"
+               <%= task && task.recurring ? 'checked' : '' %>
+               class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-gray-900" />
+        <span class="text-sm text-gray-300 font-medium">Recurring task</span>
+      </label>
+
+      <div id="recur-fields" class="pl-7 space-y-3" style="display:none">
+        <input type="hidden" name="recurRule" id="taskRecurRuleHidden" value="<%= (task && task.recurRule) || 'daily' %>">
+
+        <div id="taskRecurInit" data-rule="<%= (task && task.recurRule) || '' %>">
+          <label class="block text-xs text-gray-500 mb-1.5">Repeat</label>
+          <select id="taskRecurRuleSelect" onchange="taskHandleRuleSelect(this.value)"
+                  class="px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm
+                         focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+            <option value="hourly">Hourly</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekends">Weekends</option>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Biweekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="every3months">Every 3 Months</option>
+            <option value="every6months">Every 6 Months</option>
+            <option value="yearly">Yearly</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+
+        <!-- Custom panel -->
+        <div id="taskCustomPanel" class="hidden space-y-3 pt-3 border-t border-gray-700/60">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Frequency</label>
+              <select id="taskCustomFreq" onchange="taskHandleCustomFreq(this.value)"
+                      class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm
+                             focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Every</label>
+              <div class="flex items-center gap-2">
+                <input type="number" id="taskCustomInterval" min="1" max="99" value="1"
+                       oninput="taskUpdateCustomRule()"
+                       class="w-16 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 text-sm
+                              focus:outline-hidden focus:ring-2 focus:ring-indigo-500">
+                <span id="taskCustomIntervalUnit" class="text-sm text-gray-500">days</span>
+              </div>
+            </div>
+          </div>
+
+          <div id="taskMonthlyOptions" class="hidden space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="taskMonthType" value="each" id="taskMonthTypeEach"
+                     checked onchange="taskUpdateCustomRule()" class="accent-indigo-500 shrink-0">
+              <span class="text-sm text-gray-400 whitespace-nowrap">Each day</span>
+              <select id="taskMonthDaySelect" onchange="taskUpdateCustomRule()"
+                      class="ml-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 text-sm
+                             focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <% for (let d = 1; d <= 31; d++) { %>
+                  <option value="<%= d %>" <%= d === taskDueDayOfMonth ? 'selected' : '' %>><%= d %></option>
+                <% } %>
+              </select>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer flex-wrap">
+              <input type="radio" name="taskMonthType" value="onthe" id="taskMonthTypeOnThe"
+                     onchange="taskUpdateCustomRule()" class="accent-indigo-500 shrink-0">
+              <span class="text-sm text-gray-400 whitespace-nowrap">On the</span>
+              <select id="taskMonthOrdSelect" onchange="taskUpdateCustomRule()"
+                      class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 text-sm
+                             focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <option value="first">first</option>
+                <option value="second">second</option>
+                <option value="third">third</option>
+                <option value="fourth">fourth</option>
+                <option value="last">last</option>
+              </select>
+              <select id="taskMonthWeekdaySelect" onchange="taskUpdateCustomRule()"
+                      class="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 text-sm
+                             focus:outline-hidden focus:ring-1 focus:ring-indigo-500">
+                <option value="sunday">Sunday</option>
+                <option value="monday">Monday</option>
+                <option value="tuesday">Tuesday</option>
+                <option value="wednesday">Wednesday</option>
+                <option value="thursday">Thursday</option>
+                <option value="friday">Friday</option>
+                <option value="saturday">Saturday</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-600">Completing this task auto-creates the next occurrence.</p>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="flex gap-3 pt-1">
+      <button type="submit"
+              class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
+        <%= task && task.id ? 'Save Changes' : 'Create Task' %>
+      </button>
+      <a href="<%= task && task.id ? '/tasks/' + task.id : '/tasks' %>"
+         class="px-5 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium transition-colors">
+        Cancel
+      </a>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  // ── Recurring logic ────────────────────────────────────────────────────────
+  (function () {
+    const UNITS = { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' };
+    const PRESETS = ['hourly','daily','weekdays','weekends','weekly','biweekly','monthly','every3months','every6months','yearly'];
+
+    const recurCheck = document.getElementById('recurringCheck');
+    const recurFields = document.getElementById('recur-fields');
+    function updateRecurFields() { recurFields.style.display = recurCheck.checked ? 'block' : 'none'; }
+    recurCheck.addEventListener('change', updateRecurFields);
+    updateRecurFields();
+
+    function taskHandleRuleSelect(val) {
+      document.getElementById('taskCustomPanel').classList.toggle('hidden', val !== 'custom');
+      if (val !== 'custom') {
+        document.getElementById('taskRecurRuleHidden').value = val;
+      } else {
+        taskUpdateCustomRule();
+      }
+    }
+
+    function taskHandleCustomFreq(freq) {
+      document.getElementById('taskCustomIntervalUnit').textContent = UNITS[freq] || 'days';
+      document.getElementById('taskMonthlyOptions').classList.toggle('hidden', freq !== 'monthly');
+      taskUpdateCustomRule();
+    }
+
+    function taskUpdateCustomRule() {
+      const freq = document.getElementById('taskCustomFreq').value;
+      const interval = document.getElementById('taskCustomInterval').value || '1';
+      let rule = 'custom:' + freq + ':' + interval;
+      if (freq === 'monthly') {
+        const checked = document.querySelector('input[name="taskMonthType"]:checked');
+        const monthType = checked ? checked.value : 'each';
+        if (monthType === 'each') {
+          rule += ':each:' + document.getElementById('taskMonthDaySelect').value;
+        } else {
+          rule += ':onthe:' + document.getElementById('taskMonthOrdSelect').value + ':' + document.getElementById('taskMonthWeekdaySelect').value;
+        }
+      }
+      document.getElementById('taskRecurRuleHidden').value = rule;
+    }
+
+    window.taskHandleRuleSelect = taskHandleRuleSelect;
+    window.taskHandleCustomFreq = taskHandleCustomFreq;
+    window.taskUpdateCustomRule = taskUpdateCustomRule;
+
+    var rule = document.getElementById('taskRecurInit').dataset.rule || '';
+    if (rule && PRESETS.includes(rule)) {
+      document.getElementById('taskRecurRuleSelect').value = rule;
+    } else if (rule.startsWith('custom:')) {
+      var parts = rule.split(':');
+      var freq = parts[1] || 'daily';
+      document.getElementById('taskRecurRuleSelect').value = 'custom';
+      document.getElementById('taskCustomPanel').classList.remove('hidden');
+      document.getElementById('taskCustomFreq').value = freq;
+      document.getElementById('taskCustomInterval').value = parts[2] || '1';
+      document.getElementById('taskCustomIntervalUnit').textContent = UNITS[freq] || 'days';
+      if (freq === 'monthly') {
+        document.getElementById('taskMonthlyOptions').classList.remove('hidden');
+        if (parts[3] === 'onthe') {
+          document.getElementById('taskMonthTypeOnThe').checked = true;
+          document.getElementById('taskMonthOrdSelect').value = parts[4] || 'first';
+          document.getElementById('taskMonthWeekdaySelect').value = parts[5] || 'sunday';
+        } else {
+          document.getElementById('taskMonthTypeEach').checked = true;
+          document.getElementById('taskMonthDaySelect').value = parts[4] || '1';
+        }
+      }
+      document.getElementById('taskRecurRuleHidden').value = rule;
+    }
+
+    document.querySelector('form').addEventListener('submit', function () {
+      if (document.getElementById('taskRecurRuleSelect').value === 'custom') {
+        taskUpdateCustomRule();
+      }
+    });
+  })();
+
+  function insertChecklist() {
+    const ta = document.getElementById('notes');
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const sel   = ta.value.substring(start, end);
+    const before = ta.value.substring(0, start);
+    const after  = ta.value.substring(end);
+
+    if (sel) {
+      const lines = sel.split('\n');
+      if (lines.some(l => /^- \[[ x]\] /.test(l))) {
+        const toggled = lines.map(l => {
+          if (l.startsWith('- [ ] ')) return '- [x] ' + l.slice(6);
+          if (l.startsWith('- [x] ')) return '- [ ] ' + l.slice(6);
+          return l;
+        }).join('\n');
+        ta.value = before + toggled + after;
+        ta.focus();
+        ta.setSelectionRange(start, start + toggled.length);
+        return;
+      }
+    }
+
+    const nl = (before === '' || before.endsWith('\n')) ? '' : '\n';
+    const tpl = nl + '- [ ] \n- [ ] \n- [ ] \n';
+    ta.value = before + tpl + after;
+    const cursor = start + nl.length + 6;
+    ta.focus();
+    ta.setSelectionRange(cursor, cursor);
+  }
+
+  function addTag(tag) {
+    const input = document.getElementById('tags');
+    const current = input.value.split(',').map(t => t.trim()).filter(Boolean);
+    if (!current.includes(tag)) { current.push(tag); input.value = current.join(', '); }
+  }
+</script>

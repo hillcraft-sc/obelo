@@ -1,0 +1,39 @@
+<div class="w-full max-w-sm mx-auto px-4">
+  <div class="text-center mb-6">
+    <img src="/icons/obelo-192.png" alt="Obelo" class="w-14 h-14 rounded-2xl mx-auto mb-4 object-cover" />
+    <h1 class="text-2xl font-bold text-white">Welcome to Obelo</h1>
+    <p class="text-gray-400 text-sm mt-1">Create the first account. It becomes the admin, who can add everyone else.</p>
+  </div>
+
+  <% if (error) { %>
+    <div class="mb-4 px-4 py-3 rounded-lg bg-red-950 border border-red-800 text-red-300 text-sm"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/auth/setup" class="space-y-3">
+    <% const field = 'w-full px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-sm focus:outline-none focus:border-indigo-500'; %>
+    <div>
+      <label for="username" class="block text-xs text-gray-400 mb-1">Username</label>
+      <input id="username" name="username" type="text" value="<%= form.username || '' %>" required autofocus
+             autocomplete="username" autocapitalize="none" spellcheck="false" class="<%= field %>">
+    </div>
+    <div>
+      <label for="displayName" class="block text-xs text-gray-400 mb-1">Name</label>
+      <input id="displayName" name="displayName" type="text" value="<%= form.displayName || '' %>" class="<%= field %>">
+    </div>
+    <div>
+      <label for="email" class="block text-xs text-gray-400 mb-1">Email <span class="text-gray-600">(optional)</span></label>
+      <input id="email" name="email" type="email" value="<%= form.email || '' %>" autocomplete="email" class="<%= field %>">
+    </div>
+    <div>
+      <label for="password" class="block text-xs text-gray-400 mb-1">Password <span class="text-gray-600">(at least <%= minLength %> characters)</span></label>
+      <input id="password" name="password" type="password" required minlength="<%= minLength %>" autocomplete="new-password" class="<%= field %>">
+    </div>
+    <div>
+      <label for="confirm" class="block text-xs text-gray-400 mb-1">Password again</label>
+      <input id="confirm" name="confirm" type="password" required autocomplete="new-password" class="<%= field %>">
+    </div>
+    <button type="submit" class="w-full py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors duration-150">
+      Create account
+    </button>
+  </form>
+</div>

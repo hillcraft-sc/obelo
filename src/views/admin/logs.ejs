@@ -1,0 +1,154 @@
+<div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <%- include('../partials/page-heading', { heading: 'Logs', description: total.toLocaleString() + ' entries' }) %>
+    <a href="/admin" class="text-xs text-indigo-400 hover:text-indigo-300">← Dashboard</a>
+  </div>
+
+  <% if (success) { %>
+    <div class="rounded-xl bg-emerald-950 border border-emerald-800 px-4 py-3 text-sm text-emerald-300"><%= success %></div>
+  <% } %>
+  <% if (error) { %>
+    <div class="rounded-xl bg-red-950 border border-red-800 px-4 py-3 text-sm text-red-300"><%= error %></div>
+  <% } %>
+
+  <!-- Filter bar -->
+  <form method="GET" action="/admin/logs" class="flex flex-wrap gap-2 items-end">
+    <select name="level"
+            class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-hidden focus:border-indigo-500">
+      <option value="">All levels</option>
+      <% ['debug','info','warn','error'].forEach(l => { %>
+        <option value="<%= l %>" <%= filters.level === l ? 'selected' : '' %>><%= l %></option>
+      <% }); %>
+    </select>
+
+    <select name="category"
+            class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-hidden focus:border-indigo-500">
+      <option value="">All categories</option>
+      <% categories.forEach(c => { %>
+        <option value="<%= c %>" <%= filters.category === c ? 'selected' : '' %>><%= c %></option>
+      <% }); %>
+    </select>
+
+    <input type="text" name="q" value="<%= filters.q %>" placeholder="Search messages…"
+           class="flex-1 min-w-[180px] bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:outline-hidden focus:border-indigo-500" />
+
+    <button type="submit"
+            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
+      Filter
+    </button>
+
+    <% if (filters.level || filters.category || filters.q) { %>
+      <a href="/admin/logs"
+         class="px-4 py-2 border border-gray-700 text-gray-400 hover:text-gray-200 text-sm font-medium rounded-lg transition-colors">
+        Clear
+      </a>
+    <% } %>
+
+    <div class="flex gap-2 ml-auto">
+      <a href="/admin/logs/export?<%= new URLSearchParams(filters).toString() %>"
+         class="px-3 py-2 border border-gray-700 text-gray-400 hover:text-gray-200 text-sm rounded-lg transition-colors">
+        Export CSV
+      </a>
+      <form action="/admin/logs/clear" method="POST"
+            onsubmit="return confirm('Delete all log entries? This cannot be undone.')">
+        <button type="submit"
+                class="px-3 py-2 border border-red-900 text-red-400 hover:text-red-300 hover:border-red-700 text-sm rounded-lg transition-colors">
+          Clear all
+        </button>
+      </form>
+    </div>
+  </form>
+
+  <!-- Log table -->
+  <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+    <% if (logs.length === 0) { %>
+      <p class="text-center text-gray-600 text-sm py-12">No log entries found</p>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs" id="log-table">
+          <thead>
+            <tr class="border-b border-gray-800 text-gray-500 text-left">
+              <th class="px-4 py-2.5 font-medium whitespace-nowrap">Time</th>
+              <th class="px-3 py-2.5 font-medium">Level</th>
+              <th class="px-3 py-2.5 font-medium">Category</th>
+              <th class="px-3 py-2.5 font-medium w-full">Message</th>
+              <th class="px-3 py-2.5 font-medium w-8"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% logs.forEach((entry, i) => { %>
+              <tr class="border-t border-gray-800/50 hover:bg-gray-800/30 cursor-default
+                         <%= entry.meta ? 'has-meta' : '' %>"
+                  <% if (entry.meta) { %>onclick="toggleMeta(<%= i %>)"<% } %>>
+                <td class="px-4 py-2.5 text-gray-500 whitespace-nowrap font-mono align-middle">
+                  <%= entry.createdAt.toISOString().replace('T',' ').slice(0,19) %>
+                </td>
+                <td class="px-3 py-2.5 whitespace-nowrap align-middle">
+                  <span class="px-1.5 py-0.5 rounded font-semibold
+                    <%= entry.level === 'error' ? 'bg-red-950 text-red-400' :
+                        entry.level === 'warn'  ? 'bg-amber-950 text-amber-400' :
+                        entry.level === 'debug' ? 'bg-gray-800 text-gray-500' :
+                                                  'bg-gray-800 text-gray-400' %>">
+                    <%= entry.level %>
+                  </span>
+                </td>
+                <td class="px-3 py-2.5 whitespace-nowrap align-middle">
+                  <span class="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 font-medium"><%= entry.category %></span>
+                </td>
+                <td class="px-3 py-2.5 text-gray-300 align-middle">
+                  <%= entry.message %>
+                </td>
+                <td class="px-3 py-2.5 text-right align-middle">
+                  <% if (entry.meta) { %>
+                    <svg id="chevron-<%= i %>" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                         stroke-width="2" stroke="currentColor"
+                         class="w-3.5 h-3.5 text-gray-600 inline-block transition-transform duration-150">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  <% } %>
+                </td>
+              </tr>
+              <% if (entry.meta) { %>
+                <tr id="meta-<%= i %>" class="hidden border-t-0">
+                  <td colspan="5" class="px-4 pb-3 pt-0">
+                    <pre class="bg-gray-950 border border-gray-800 rounded-lg px-4 py-3 text-[11px] text-gray-400 font-mono whitespace-pre overflow-x-auto leading-relaxed"><%= JSON.stringify(entry.meta, null, 2) %></pre>
+                  </td>
+                </tr>
+              <% } %>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Pagination -->
+  <% if (totalPages > 1) { %>
+    <div class="flex items-center justify-between text-xs text-gray-500">
+      <span>Page <%= page %> of <%= totalPages %></span>
+      <div class="flex gap-2">
+        <% if (page > 1) { %>
+          <a href="/admin/logs?<%= new URLSearchParams({...filters, page: page - 1}).toString() %>"
+             class="px-3 py-1.5 border border-gray-700 rounded-lg hover:text-gray-300 transition-colors">← Prev</a>
+        <% } %>
+        <% if (page < totalPages) { %>
+          <a href="/admin/logs?<%= new URLSearchParams({...filters, page: page + 1}).toString() %>"
+             class="px-3 py-1.5 border border-gray-700 rounded-lg hover:text-gray-300 transition-colors">Next →</a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+</div>
+
+<script>
+function toggleMeta(i) {
+  const row  = document.getElementById('meta-' + i);
+  const icon = document.getElementById('chevron-' + i);
+  const open = !row.classList.contains('hidden');
+  row.classList.toggle('hidden', open);
+  icon.style.transform = open ? '' : 'rotate(90deg)';
+}
+</script>
